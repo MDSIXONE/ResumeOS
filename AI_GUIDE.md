@@ -6,6 +6,125 @@
 
 ---
 
+## Step 0: Load the Skills into YOUR environment (DO THIS FIRST)
+
+Before you do anything else, you must install the ResumeOS Skills into your own
+agent environment so you can actually USE them. The skills are in `skills/` but
+they are not auto-loaded — you need to link them into your agent's skill
+directory.
+
+### The easy way (recommended)
+
+Run the installer script from the repo root:
+
+```bash
+python scripts/install-skills.py
+```
+
+This script will:
+1. Auto-detect your agent type (Claude Code, OpenCode, Cursor, or generic)
+2. Find your workspace root (walks up to find `.claude/`, `.opencode/`, etc.)
+3. Create the correct skill directory if it doesn't exist
+4. Link (Unix) or copy (Windows) all 9 Skills into that directory
+5. Print a verification message
+
+**What it creates:**
+
+| Agent | Directory | How it works |
+|---|---|---|
+| Claude Code | `.claude/skills/<skill-name>/` | Claude Code auto-discovers SKILL.md files here |
+| OpenCode | `.opencode/skills/<skill-name>/` | OpenCode auto-discovers SKILL.md files here |
+| Cursor | `.cursor/skills/<skill-name>/` | Cursor reads from this directory |
+| Generic | `.agent/skills/<skill-name>/` | Fallback for other AI tools |
+
+### The manual way (if the script doesn't work)
+
+If the script fails or your agent uses a non-standard path, do this manually:
+
+```bash
+# For Claude Code:
+mkdir -p .claude/skills
+cp -r skills/career_collector .claude/skills/
+cp -r skills/career_builder .claude/skills/
+cp -r skills/resume_builder .claude/skills/
+cp -r skills/resume_tailoring .claude/skills/
+cp -r skills/cover_letter .claude/skills/
+cp -r skills/interview .claude/skills/
+cp -r skills/resume_review .claude/skills/
+cp -r skills/job_tracker .claude/skills/
+cp -r skills/career_update .claude/skills/
+
+# For OpenCode: same but target .opencode/skills/
+# For other agents: use your tool's skill/rules directory
+```
+
+Or on Windows (PowerShell):
+
+```powershell
+New-Item -ItemType Directory -Force -Path .claude\skills
+Copy-Item -Recurse skills\career_collector .claude\skills\
+Copy-Item -Recurse skills\career_builder .claude\skills\
+Copy-Item -Recurse skills\resume_builder .claude\skills\
+Copy-Item -Recurse skills\resume_tailoring .claude\skills\
+Copy-Item -Recurse skills\cover_letter .claude\skills\
+Copy-Item -Recurse skills\interview .claude\skills\
+Copy-Item -Recurse skills\resume_review .claude\skills\
+Copy-Item -Recurse skills\job_tracker .claude\skills\
+Copy-Item -Recurse skills\career_update .claude\skills\
+```
+
+### Install specific skills only
+
+```bash
+python scripts/install-skills.py resume_tailoring cover_letter interview
+```
+
+### List available skills
+
+```bash
+python scripts/install-skills.py --list
+```
+
+### Remove all ResumeOS skills
+
+```bash
+python scripts/install-skills.py --remove
+```
+
+### Verify installation
+
+After running the installer, verify the skills are in place:
+
+```bash
+# Check the directory exists and has skills
+ls .claude/skills/     # or .opencode/skills/ etc.
+
+# You should see 9 directories:
+# career_builder  career_collector  career_update  cover_letter
+# interview  job_tracker  resume_builder  resume_review  resume_tailoring
+```
+
+**Tell the human:** "I've loaded the 9 ResumeOS Skills into my environment. I can
+now use them to help you collect career material, build your knowledge base,
+generate resumes, write cover letters, prep for interviews, and track job
+applications."
+
+### What each Skill does (for your reference)
+
+| Skill | When to use it |
+|---|---|
+| `career_collector` | Human gives you a PDF/DOCX/README/GitHub repo to ingest |
+| `career_builder` | Human wants to enrich the vault, detect gaps, generate STAR stories |
+| `resume_builder` | Human wants a master resume from the full vault |
+| `resume_tailoring` | Human gives a JD and wants a tailored resume for that job |
+| `cover_letter` | Human wants a cover letter for a specific job |
+| `interview` | Human wants interview prep (behavior/tech/project questions + STAR) |
+| `resume_review` | Human wants a resume reviewed (ATS/recruiter/HM/tech perspectives) |
+| `job_tracker` | Human wants to track applications, interviews, offers |
+| `career_update` | Human added new files to the vault and wants them processed |
+
+---
+
 ## Who you are talking to
 
 The human who asked you to clone this repo is likely a developer, researcher, or
@@ -196,22 +315,20 @@ If the human has Obsidian installed:
 
 ---
 
-## Step 6: Install Skills in Claude Code / OpenCode (optional)
+## Step 6: Skills are already loaded (see Step 0)
 
-If the human uses Claude Code or OpenCode:
+You already installed the Skills in Step 0. If you skipped Step 0, go back and
+run `python scripts/install-skills.py` now. The 9 Skills are your tools for
+helping the human with career tasks:
 
-1. Point the agent at the `skills/` directory
-2. Or symlink individual skill folders into `.claude/skills/`
-3. The root `plugin.json` registers the full bundle
-
-**What to tell the human:**
-
-> The 9 Skills are AI agent plugins. `career_collector` ingests raw material,
-> `career_builder` enriches the vault, `resume_builder` generates a master
-> resume, `resume_tailoring` tailors it to a JD, `cover_letter` writes cover
-> letters, `interview` generates prep packs, `resume_review` reviews resumes,
-> `job_tracker` tracks applications, `career_update` watches for vault changes.
-> You can install all of them or just the ones you need.
+- Human drops a PDF in `vault/inbox/` → use `career_collector` to ingest it
+- Human wants to fill knowledge gaps → use `career_builder`
+- Human wants a resume → use `resume_builder` (master) or `resume_tailoring` (for a JD)
+- Human wants a cover letter → use `cover_letter`
+- Human has an interview → use `interview` to generate prep
+- Human wants a resume reviewed → use `resume_review`
+- Human is job hunting → use `job_tracker` to manage applications
+- Human added new files to vault → use `career_update` to process them
 
 ---
 
