@@ -1,0 +1,16 @@
+{
+  "$schema": "../../schemas/plugin-manifest.schema.json",
+  "name": "career_update",
+  "version": "0.1.0",
+  "description": "Watch the vault for new or changed files; validate, enrich via career_builder, and mark derived docs stale.",
+  "type": "skill",
+  "license": "MIT",
+  "depends_on": ["career_builder@1.0.0", "schema@1.0.0"],
+  "hooks": ["onVaultChange"],
+  "mcp_tools": [],
+  "permissions": {
+    "read":  ["vault/**", "output/**/*.json", "schemas/**", "prompts/**", "config/**"],
+    "write": ["vault/career/**", "output/.stale.json"],
+    "deny":  ["vault/.obsidian/**"]
+  }
+}

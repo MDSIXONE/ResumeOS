@@ -1,0 +1,24 @@
+# Vault Metadata
+# Validated against schemas/vault-meta.schema.json.
+# This file holds metadata that applies to the vault as a whole (owner, style defaults, provenance
+# of the vault itself). It is NOT an entity note and lives at the vault root.
+
+vault_version: "1.0.0"
+
+owner:
+  name: ""                # Fill in your display name
+  email: ""               # Fill in your contact email
+  location: ""            # City / country, or "Remote"
+  links: []               # e.g. [{kind: "linkedin", ref: "https://..."}, {kind: "github", ref: "..."}]
+
+created_at: "2026-06-29"
+
+default_language: zh      # zh | en — used by Skills when no language is specified
+default_resume_style: industry   # industry | academic | research
+
+tags: []                  # global tags applied to the vault, e.g. [career, robotics]
+
+summary: >
+  This vault is the single source of truth for my career.
+  Every derived resume, cover letter, interview pack, and dashboard is generated from here.
+  I do not edit derived documents directly — I update the vault, then regenerate.

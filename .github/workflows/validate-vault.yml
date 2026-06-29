@@ -1,0 +1,37 @@
+name: Validate Vault
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'vault/**'
+      - 'schemas/**'
+      - 'examples/**'
+
+jobs:
+  validate:
+    name: Validate vault schemas
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install jsonschema pyyaml
+
+      - name: Run validator
+        run: |
+          python scripts/validate-vault.py --vault examples/vault
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "Vault validation completed" >> $GITHUB_STEP_SUMMARY

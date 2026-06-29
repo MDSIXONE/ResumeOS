@@ -1,0 +1,16 @@
+{
+  "$schema": "../../schemas/plugin-manifest.schema.json",
+  "name": "career_collector",
+  "version": "0.1.0",
+  "description": "Collect raw career material (PDF/DOCX/MD/GitHub/LinkedIn/images/certs/blogs) into vault/inbox/ as provenanced notes.",
+  "type": "skill",
+  "license": "MIT",
+  "depends_on": ["schema@1.0.0"],
+  "hooks": [],
+  "mcp_tools": ["filesystem:read", "github:get_commits", "github:get_prs", "github:get_releases"],
+  "permissions": {
+    "read":  ["vault/**", "schemas/**", "prompts/**", "config/**"],
+    "write": ["vault/inbox/**"],
+    "deny":  ["vault/career/**", "vault/jobs/**", "output/**"]
+  }
+}

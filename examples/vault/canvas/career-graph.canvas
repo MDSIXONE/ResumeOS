@@ -1,0 +1,22 @@
+{
+  "nodes": [
+    { "id": "px4-uav", "type": "text", "x": -250, "y": -120, "width": 250, "height": 120, "text": "# PX4 UAV Autonomy\n\nproject", "color": "1" },
+    { "id": "ros-nav", "type": "text", "x": 50, "y": -120, "width": 250, "height": 120, "text": "# ROS Navigation\n\nproject", "color": "1" },
+    { "id": "yolo-detect", "type": "text", "x": 350, "y": -120, "width": 250, "height": 120, "text": "# YOLO Detection\n\nproject", "color": "1" },
+    { "id": "bci", "type": "text", "x": -250, "y": 120, "width": 250, "height": 120, "text": "# Brain-Computer Interface\n\nproject", "color": "1" },
+    { "id": "beng-robotics", "type": "text", "x": -550, "y": 0, "width": 250, "height": 100, "text": "# BEng Robotics\n\neducation", "color": "4" },
+    { "id": "pytorch", "type": "text", "x": 50, "y": 120, "width": 200, "height": 80, "text": "## PyTorch\nskill", "color": "3" },
+    { "id": "ros2", "type": "text", "x": 350, "y": 120, "width": 200, "height": 80, "text": "## ROS 2\nskill", "color": "3" },
+    { "id": "robomaster-2023", "type": "text", "x": -250, "y": -320, "width": 220, "height": 80, "text": "## RoboMaster 2023\ncompetition", "color": "2" },
+    { "id": "natl-robotics-2023", "type": "text", "x": 50, "y": -320, "width": 240, "height": 80, "text": "## National Robotics Championship\naward", "color": "5" }
+  ],
+  "edges": [
+    { "id": "e1", "fromNode": "ros2", "toNode": "px4-uav", "label": "used in" },
+    { "id": "e2", "fromNode": "ros2", "toNode": "ros-nav", "label": "used in" },
+    { "id": "e3", "fromNode": "pytorch", "toNode": "yolo-detect", "label": "used in" },
+    { "id": "e4", "fromNode": "px4-uav", "toNode": "robomaster-2023", "label": "built for" },
+    { "id": "e5", "fromNode": "robomaster-2023", "toNode": "natl-robotics-2023", "label": "won" },
+    { "id": "e6", "fromNode": "px4-uav", "toNode": "natl-robotics-2023", "label": "resulted in" },
+    { "id": "e7", "fromNode": "beng-robotics", "toNode": "px4-uav", "label": "context" }
+  ]
+}

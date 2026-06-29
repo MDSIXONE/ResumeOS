@@ -1,0 +1,55 @@
+"""Tailoring — JD-tailored ResumeIR generation (Sprint 5).
+
+Per user directive (Sprint 5):
+    Resume is just a projection of the Career Knowledge Base.
+
+Tailoring is the use-case: "given this JD, produce a ResumeIR from Knowledge".
+It is a thin wrapper around ResumeAssemblyPipeline representing the
+"JD → ResumeIR" operation. Knowledge is NEVER modified.
+"""
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from runtime.resume.pipeline import ResumeAssemblyPipeline
+
+if TYPE_CHECKING:
+    from runtime.knowledge_index import KnowledgeIndex
+    from runtime.resume.ir import ResumeIR
+
+
+class Tailoring:
+    """JD-tailored ResumeIR generation.
+
+    Tailoring = "given a JD, produce a customised ResumeIR from Knowledge".
+
+    This is a thin wrapper around ``ResumeAssemblyPipeline`` that represents
+    the tailoring use-case: different JDs → different ResumeIRs from the
+    same Knowledge. Knowledge is NEVER modified.
+    """
+
+    def __init__(self) -> None:
+        """Initialise Tailoring with a default pipeline."""
+        self._pipeline = ResumeAssemblyPipeline()
+
+    def tailor(
+        self,
+        kb_index: "KnowledgeIndex",
+        jd: str,
+        company: str = "",
+    ) -> "ResumeIR":
+        """Produce a JD-tailored ResumeIR from Knowledge.
+
+        Args:
+            kb_index: KnowledgeIndex to query (read-only, NEVER modified)
+            jd: Job description text
+            company: Target company name (optional, for metadata)
+
+        Returns:
+            ResumeIR tailored to the given JD
+
+        Constraint:
+            kb_index is NEVER modified. Tailoring only reads Knowledge.
+        """
+        ir = self._pipeline.assemble(kb_index, jd=jd, company=company)
+        return ir

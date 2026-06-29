@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://resumeos.dev/schemas/1.0.0/plugin-manifest.schema.json",
+  "title": "ResumeOS Plugin Manifest",
+  "description": "Validates plugin.json for every Skill (and the root bundle). See ADR-0004, ADR-0005.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "version", "description"],
+
+  "properties": {
+    "$schema": { "type": "string", "format": "uri", "description": "Optional JSON Schema self-reference." },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]*$",
+      "description": "Plugin/skill name, lowercase kebab-case or snake_case (project convention uses underscores). Namespaced at runtime as resumeos:<name>."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$",
+      "description": "Semver."
+    },
+    "description": { "type": "string", "minLength": 5 },
+    "type": {
+      "type": "string",
+      "enum": ["skill", "plugin-bundle"],
+      "default": "skill"
+    },
+    "license": { "type": "string" },
+    "homepage": { "type": "string", "format": "uri" },
+
+    "skills": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "For a plugin-bundle: list of included skill folder paths."
+    },
+
+    "depends_on": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [],
+      "description": "Other skill names or 'schema@<version>' this plugin requires."
+    },
+
+    "hooks": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["vault.import", "vault.export", "vault.transform", "vault.validate", "vault.render", "onVaultChange", "PreToolUse", "PostToolUse"]
+      },
+      "default": []
+    },
+
+    "mcp_tools": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [],
+      "description": "MCP tools this skill may call (ADR-0008). Namespaced server:tool."
+    },
+
+    "subscribes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [],
+      "description": "Domain event types this Skill subscribes to (ADR-0014). Built-in types listed in docs/runtime/event-catalog.md. Community events namespaced plugin-name:EventName."
+    },
+
+    "permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "read":  { "type": "array", "items": { "type": "string" }, "default": [] },
+        "write": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "deny":  { "type": "array", "items": { "type": "string" }, "default": [] }
+      }
+    },
+
+    "config":  { "type": "string" },
+    "vault":   { "type": "string" },
+    "schemas": { "type": "string" },
+    "templates": { "type": "string" },
+    "prompts": { "type": "string" }
+  }
+}

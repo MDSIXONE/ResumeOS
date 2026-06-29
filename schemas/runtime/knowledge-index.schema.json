@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://resumeos.dev/schemas/runtime/1.0.0/knowledge-index.schema.json",
+  "title": "Knowledge Index",
+  "description": "The read-only, rebuildable JSON projection of vault career entities (ADR-0012). Stored at vault/.library/index/knowledge-index.json. Git-ignored. Never user-edited. The vault remains the SSOT (ADR-0001/0003). Includes relation graph edges per ADR-0016 Rule 7.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "built_at", "entity_count", "entities"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semver of the index format. A schema bump invalidates the index; the next rebuild picks up the new shape."
+    },
+    "built_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 datetime when the index was last built."
+    },
+    "entity_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total number of entities across all types."
+    },
+    "entities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["projects", "awards", "research", "skills", "jobs", "education", "competitions", "internships", "opensource"],
+      "description": "Keys are entity-type folder names from resumeos.config.yaml: vault.entities. Each value is an array of entity summaries. All 9 types are required; empty arrays represent zero entities of that type.",
+      "properties": {
+        "projects": { "type": "array", "items": { "$ref": "#/$defs/entity_summary" } },
+        "awards": { "type": "array", "items": { "$ref": "#/$defs/entity_summary" } },
+        "research": { "type": "array", "items": { "$ref": "#/$defs/entity_summary" } },
+        "skills": { "type": "array", "items": { "$ref": "#/$defs/entity_summary" } },
+        "jobs": { "type": "array", "items": { "$ref": "#/$defs/entity_summary" } },
+        "education": { "type": "array", "items": { "$ref": "#/$defs/entity_summary" } },
+        "competitions": { "type": "array", "items": { "$ref": "#/$defs/entity_summary" } },
+        "internships": { "type": "array", "items": { "$ref": "#/$defs/entity_summary" } },
+        "opensource": { "type": "array", "items": { "$ref": "#/$defs/entity_summary" } }
+      }
+    },
+    "edges": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Relation graph edges (ADR-0016 Rule 7). Maps entity-id to its outgoing and incoming typed relations. Rebuildable from entity frontmatter relations[]. Optional — may be absent if no relations are indexed yet.",
+      "properties": {
+        "outgoing": {
+          "type": "object",
+          "additionalProperties": { "type": "array", "items": { "$ref": "#/$defs/edge" } },
+          "description": "entity-id -> [{type, peer}] relations this entity points to."
+        },
+        "incoming": {
+          "type": "object",
+          "additionalProperties": { "type": "array", "items": { "$ref": "#/$defs/edge" } },
+          "description": "entity-id -> [{type, peer}] relations pointing at this entity."
+        }
+      }
+    }
+  },
+  "$defs": {
+    "entity_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "type", "path", "tags", "updated", "key_fields"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9-]+$", "description": "Entity id (kebab-case)." },
+        "title": { "type": "string", "description": "Human-readable title from frontmatter." },
+        "type": { "type": "string", "description": "Entity type, matching the folder key." },
+        "folder": { "type": "string", "description": "Vault folder path for this entity type." },
+        "path": { "type": "string", "description": "Vault path to the entity note." },
+        "tags": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "updated": { "type": ["string", "null"], "format": "date", "description": "ISO 8601 date of last entity update, or null if unknown." },
+        "summary": { "type": ["string", "null"], "description": "One-line summary extracted from the note, or null." },
+        "key_fields": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "High-signal fields per entity type (role/company/stack for projects; issuer/date for awards; DOI/venue for research; proficiency/last_used for skills). The full frontmatter stays in the vault note."
+        }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "peer"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["evidence", "reference", "derived_from", "part_of", "award_for", "author_of", "contributes_to"],
+          "description": "Relation type per ADR-0016."
+        },
+        "peer": {
+          "type": "string",
+          "pattern": "^\\[\\[[^\\]]+\\]\\]$",
+          "description": "Wikilink of the related entity: [[entity-id]]. 'target' for outgoing edges, 'source' for incoming edges."
+        }
+      }
+    }
+  }
+}

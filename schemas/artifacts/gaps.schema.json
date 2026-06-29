@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://resumeos.dev/schemas/1.0.0/artifacts/gaps.schema.json",
+  "title": "Tailoring Phase-2 Gaps Artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["job_slug", "gaps"],
+  "properties": {
+    "job_slug": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["requirement", "state", "action", "severity"],
+        "properties": {
+          "requirement": { "type": "string" },
+          "state": { "type": "string", "enum": ["covered", "underdeveloped", "missing", "misaligned"] },
+          "candidate": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "entity_id": { "type": ["string", "null"], "description": "Null when state=missing (no candidate exists)." },
+              "field": { "type": ["string", "null"], "description": "Null when state=missing." },
+              "confidence": { "type": "string", "enum": ["confirmed", "inferred", "missing"] }
+            }
+          },
+          "action": { "type": "string", "enum": ["select", "ask", "reframe", "omit"] },
+          "severity": { "type": "string", "enum": ["high", "medium", "low"] },
+          "follow_up_question": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

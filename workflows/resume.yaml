@@ -1,0 +1,82 @@
+# ResumeOS Workflow: resume.full
+# A declarative end-to-end resume generation pipeline (ADR-0018).
+# Run with: resume workflow run resume.full --target-role "Senior Robotics Engineer" --target-company "Boston Dynamics"
+#
+# This workflow composes resume_tailoring's checkpoint pipeline (ADR-0006) with
+# downstream generators (review, cover_letter, interview). Steps with depends_on
+# form a DAG; cover_letter and interview run concurrently after generate.
+#
+# This is a spec-first example (Phase 3). The runtime executor lands in Phase 3.5/4.
+
+id: resume.full
+version: "1.0.0"
+description: "Full resume generation — research → gap analysis → assembly → generate → review + cover letter + interview prep."
+
+trigger: manual
+trigger_event: null
+
+steps:
+  # --- resume_tailoring checkpoint pipeline (ADR-0006) ---
+  - id: research
+    skill: resume_tailoring
+    phase: research
+    inputs:
+      target_role: "${trigger.target_role}"
+      target_company: "${trigger.target_company}"
+    checkpoint: true
+    on_success_event: ResearchCompleted
+
+  - id: gap_analysis
+    skill: resume_tailoring
+    phase: gap_analysis
+    depends_on: [research]
+    inputs:
+      research_artifact: "${steps.research.artifact_path}"
+    checkpoint: true
+    on_success_event: GapAnalysisCompleted
+
+  - id: assembly
+    skill: resume_tailoring
+    phase: assembly
+    depends_on: [gap_analysis]
+    inputs:
+      gap_artifact: "${steps.gap_analysis.artifact_path}"
+    checkpoint: true
+    on_success_event: AssemblyCompleted
+
+  - id: generate
+    skill: resume_tailoring
+    phase: generation
+    depends_on: [assembly]
+    inputs:
+      assembly_artifact: "${steps.assembly.artifact_path}"
+    checkpoint: false
+    on_success_event: ResumeGenerated
+
+  # --- downstream generators (parallel, both depend on generate) ---
+  - id: review
+    skill: resume_review
+    depends_on: [generate]
+    inputs:
+      resume_path: "${steps.generate.output.resume_path}"
+    checkpoint: false
+    on_success_event: ReviewPassed
+
+  - id: cover_letter
+    skill: cover_letter
+    depends_on: [generate]
+    inputs:
+      resume_path: "${steps.generate.output.resume_path}"
+      target_role: "${trigger.target_role}"
+      target_company: "${trigger.target_company}"
+    checkpoint: false
+    on_success_event: CoverLetterGenerated
+
+  - id: interview
+    skill: interview
+    depends_on: [generate]
+    inputs:
+      resume_path: "${steps.generate.output.resume_path}"
+      target_role: "${trigger.target_role}"
+    checkpoint: false
+    on_success_event: InterviewPrepGenerated

@@ -1,0 +1,239 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://resumeos.dev/schemas/1.0.0/education.schema.json",
+  "title": "Education",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "entity_type",
+    "institution",
+    "degree",
+    "timeline",
+    "sources"
+  ],
+  "properties": {
+    "entity_type": {
+      "type": "string",
+      "const": "education"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "institution": {
+      "type": "string"
+    },
+    "degree": {
+      "type": "string",
+      "description": "e.g. 'B.Eng.', 'M.Sc.', 'Ph.D.'"
+    },
+    "field": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Major / field of study."
+    },
+    "timeline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start"
+      ],
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date"
+        },
+        "end": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "ongoing": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "gpa": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "e.g. '3.8/4.0'. Only if confirmed."
+    },
+    "ranking": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "e.g. 'top 5%'."
+    },
+    "thesis": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "advisor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "coursework": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "honors": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "related": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "confidence": {
+      "type": "string",
+      "enum": [
+        "confirmed",
+        "inferred",
+        "missing"
+      ],
+      "default": "confirmed"
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "ref"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "ref": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "$resumeos": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "history": {
+      "type": "array",
+      "default": [],
+      "description": "Version history snapshots (ADR-0015). Appended on each entity update by career_builder/career_update. Top-level frontmatter is always the present state; history archives previous values only.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "captured_at",
+          "changed_fields",
+          "previous_values",
+          "reason"
+        ],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Monotonic per-entity version, starts at 1 on creation."
+          },
+          "captured_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 datetime when this snapshot was captured."
+          },
+          "changed_fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Frontmatter field names that changed in this version."
+          },
+          "previous_values": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Map of changed field -> its previous value. Only confirmed previous values (ADR-0007), never inferred."
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "import",
+              "user_edit",
+              "skill_update",
+              "merge"
+            ],
+            "description": "What caused this version bump."
+          }
+        }
+      }
+    },
+    "relations": {
+      "type": "array",
+      "default": [],
+      "description": "Typed directed relations to other entities (ADR-0016). Coexists with the untyped `related[]` field; `relations` is preferred where the relation type carries meaning. Each target MUST be a [[wikilink]] so Obsidian Graph View renders the edge.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "target"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "evidence",
+              "reference",
+              "derived_from",
+              "part_of",
+              "award_for",
+              "author_of",
+              "contributes_to"
+            ],
+            "description": "Relation type. Open to community additions via ADR-0004 namespacing."
+          },
+          "target": {
+            "type": "string",
+            "pattern": "^\\[\\[[^\\]]+\\]\\]$",
+            "description": "Wikilink to the target entity, e.g. [[px4-uav]] or [[px4-uav|alias]]."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional free-text note on this relation."
+          }
+        }
+      }
+    }
+  }
+}

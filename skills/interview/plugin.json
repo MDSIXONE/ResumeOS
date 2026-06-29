@@ -1,0 +1,16 @@
+{
+  "$schema": "../../schemas/plugin-manifest.schema.json",
+  "name": "interview",
+  "version": "0.1.0",
+  "description": "Generate a complete interview preparation pack covering behavior, technical, and project-deep-dive questions with STAR answers, weakness analysis, and a mock interview script.",
+  "type": "skill",
+  "license": "MIT",
+  "depends_on": ["career_builder@1.0.0", "schema@1.0.0"],
+  "hooks": [],
+  "mcp_tools": [],
+  "permissions": {
+    "read":  ["vault/career/**", "vault/jobs/**", "schemas/**", "prompts/**", "config/**"],
+    "write": ["output/**"],
+    "deny":  ["vault/career/** as write target", "vault/jobs/** as write target", "vault/.obsidian/**"]
+  }
+}

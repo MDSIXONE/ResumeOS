@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://resumeos.dev/schemas/runtime/1.0.0/workflow.schema.json",
+  "title": "Workflow Definition",
+  "description": "A declarative workflow file (ADR-0018). Stored under workflows/<name>.yaml. Sequences Skill invocations with dependencies, checkpoints, and event triggers. The runtime topologically sorts steps and runs ready steps concurrently when possible.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "version", "description", "trigger", "steps"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9._-]*$",
+      "description": "Workflow id. Built-in: dotted (resume.full, resume.tailoring). Community: com_<author>_<name> (ADR-0004 §3)."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semver. Breaking changes (renamed steps, removed checkpoints) bump major."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "One-line human-readable description."
+    },
+    "trigger": {
+      "type": "string",
+      "enum": ["manual", "event", "cron"],
+      "description": "manual = resume workflow run <id>. event = auto-start when trigger_event fires (watch mode). cron = scheduled (future)."
+    },
+    "trigger_event": {
+      "type": ["string", "null"],
+      "description": "Required if trigger: event. An event type from docs/runtime/event-catalog.md. Null otherwise."
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Ordered list of steps. The runtime resolves dependencies (depends_on) to form a DAG; independent steps run concurrently.",
+      "items": { "$ref": "#/$defs/step" }
+    }
+  },
+  "$defs": {
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "skill"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]*$",
+          "description": "Step id, unique within the workflow. Used in interpolation: ${steps.<id>.artifact_path}."
+        },
+        "skill": {
+          "type": "string",
+          "description": "Skill id from skills/registry.yaml (ADR-0004 §4). The runtime resolves id → path."
+        },
+        "phase": {
+          "type": ["string", "null"],
+          "description": "For checkpoint-pipeline Skills (ADR-0006), which SKILL.md phase to run. Null for single-phase Skills."
+        },
+        "depends_on": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Step ids that must complete before this step. Forms a DAG. Cycles rejected at load time."
+        },
+        "inputs": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Input map for the Skill invocation. Values may interpolate: ${trigger.<field>}, ${steps.<id>.artifact_path}, ${steps.<id>.output.<field>}."
+        },
+        "checkpoint": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, pause after the step emits its artifact; surface to user; wait for approval before running dependents (ADR-0006)."
+        },
+        "on_success_event": {
+          "type": ["string", "null"],
+          "description": "Domain event to emit on step success (ADR-0014). Null = no event emitted."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://resumeos.dev/schemas/1.0.0/artifacts/research.schema.json",
+  "title": "Tailoring Phase-1 Research Artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["job_slug", "company", "ats_keywords", "sources"],
+  "properties": {
+    "job_slug": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "jd_summary": { "type": "string" },
+    "company": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "mission": { "type": ["string", "null"] },
+        "culture_signals": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "leadership_principles": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "hiring_style": { "type": ["string", "null"] },
+        "stack_signals": { "type": "array", "items": { "type": "string" }, "default": [] }
+      }
+    },
+    "ats_keywords": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["keyword", "required"],
+        "properties": {
+          "keyword": { "type": "string" },
+          "required": { "type": "boolean" },
+          "synonyms": { "type": "array", "items": { "type": "string" }, "default": [] }
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "ref"],
+        "properties": { "kind": { "type": "string" }, "ref": { "type": "string" } }
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "../../schemas/plugin-manifest.schema.json",
+  "name": "career_builder",
+  "version": "0.1.0",
+  "description": "Enrich the vault from inbox notes, detect gaps, ask follow-ups, and emit STAR stories, ATS keywords, and interview questions.",
+  "type": "skill",
+  "license": "MIT",
+  "depends_on": ["career_collector@1.0.0", "schema@1.0.0"],
+  "hooks": [],
+  "mcp_tools": [],
+  "permissions": {
+    "read":  ["vault/inbox/**", "vault/career/**", "schemas/**", "prompts/**", "config/**"],
+    "write": ["vault/career/**"],
+    "deny":  ["output/**", "vault/jobs/**", "vault/.obsidian/**"]
+  }
+}

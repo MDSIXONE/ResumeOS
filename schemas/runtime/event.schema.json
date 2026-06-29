@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://resumeos.dev/schemas/runtime/1.0.0/event.schema.json",
+  "title": "Runtime Event",
+  "description": "A domain event on the Event Bus (ADR-0014). Events are facts, not commands. Every event validates against this schema; per-type payloads are defined in docs/runtime/event-catalog.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["type", "time", "source_skill", "payload", "entity_refs"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Event type. Built-in types: ProjectImported, KnowledgeUpdated, ResumeGenerated, SkillStaleDetected, ImportCompleted, GapDetected. Community types namespaced plugin-name:EventName (ADR-0004 §3)."
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 datetime when the event was emitted."
+    },
+    "source_skill": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The skill id that emitted the event, or 'runtime' for runtime-translated events (onVaultChange → domain event)."
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Per-type payload. See docs/runtime/event-catalog.md for the field contract of each built-in event type. AdditionalProperties is open here because payload shape varies by event type; the catalog is the authoritative per-type spec."
+    },
+    "entity_refs": {
+      "type": "array",
+      "default": [],
+      "description": "Vault entities this event references. May be empty for events not tied to a specific entity (rare). Every ref must point to a real vault entity (ADR-0007 anti-hallucination).",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["entity_type", "entity_id"],
+        "properties": {
+          "entity_type": {
+            "type": "string",
+            "enum": ["project", "job", "education", "skill", "award", "research", "competition", "internship", "opensource"],
+            "description": "The entity type, matching resumeos.config.yaml: vault.entities keys."
+          },
+          "entity_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+$",
+            "description": "The entity id (kebab-case)."
+          },
+          "path": {
+            "type": ["string", "null"],
+            "description": "Vault path to the entity note, if applicable."
+          }
+        }
+      }
+    }
+  }
+}

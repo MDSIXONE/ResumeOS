@@ -1,0 +1,267 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://resumeos.dev/schemas/1.0.0/research.schema.json",
+  "title": "Research",
+  "description": "A research output entity (paper, preprint, thesis chapter). One Markdown note per output under vault/career/research/.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "entity_type",
+    "title",
+    "year",
+    "status",
+    "sources"
+  ],
+  "properties": {
+    "entity_type": {
+      "type": "string",
+      "const": "research",
+      "description": "Discriminator; must always be 'research'."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Stable slug id, e.g. 'uav-slam-2024'."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 2,
+      "description": "Paper or output title."
+    },
+    "venue": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Conference, journal, or workshop, e.g. 'ICRA 2024'."
+    },
+    "year": {
+      "type": "integer",
+      "description": "Year of publication or submission."
+    },
+    "authors": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Author names in paper order."
+    },
+    "author_role": {
+      "type": "string",
+      "enum": [
+        "first",
+        "co-first",
+        "corresponding",
+        "co-corresponding",
+        "contributing"
+      ],
+      "description": "Your position in the author list."
+    },
+    "doi": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Digital Object Identifier, if assigned."
+    },
+    "url": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri",
+      "description": "Public link (arXiv, publisher page, etc.)."
+    },
+    "abstract": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Paper abstract or summary."
+    },
+    "my_contribution": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "What you specifically did in this work."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "published",
+        "accepted",
+        "submitted",
+        "in-prep"
+      ],
+      "description": "Publication status."
+    },
+    "citations": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "Citation count, only if confirmed from a source."
+    },
+    "related": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Related note ids/titles (graph edges)."
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Obsidian tags."
+    },
+    "confidence": {
+      "type": "string",
+      "enum": [
+        "confirmed",
+        "inferred",
+        "missing"
+      ],
+      "default": "confirmed",
+      "description": "Fact-confidence level (ADR-0007)."
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Provenance. REQUIRED.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "ref"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "ref": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "$resumeos": {
+      "type": "object",
+      "description": "ResumeOS extension namespace.",
+      "additionalProperties": true,
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "default": "1.0.0"
+        },
+        "library_hints": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "history": {
+      "type": "array",
+      "default": [],
+      "description": "Version history snapshots (ADR-0015). Appended on each entity update by career_builder/career_update. Top-level frontmatter is always the present state; history archives previous values only.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "captured_at",
+          "changed_fields",
+          "previous_values",
+          "reason"
+        ],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Monotonic per-entity version, starts at 1 on creation."
+          },
+          "captured_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 datetime when this snapshot was captured."
+          },
+          "changed_fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Frontmatter field names that changed in this version."
+          },
+          "previous_values": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Map of changed field -> its previous value. Only confirmed previous values (ADR-0007), never inferred."
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "import",
+              "user_edit",
+              "skill_update",
+              "merge"
+            ],
+            "description": "What caused this version bump."
+          }
+        }
+      }
+    },
+    "relations": {
+      "type": "array",
+      "default": [],
+      "description": "Typed directed relations to other entities (ADR-0016). Coexists with the untyped `related[]` field; `relations` is preferred where the relation type carries meaning. Each target MUST be a [[wikilink]] so Obsidian Graph View renders the edge.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "target"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "evidence",
+              "reference",
+              "derived_from",
+              "part_of",
+              "award_for",
+              "author_of",
+              "contributes_to"
+            ],
+            "description": "Relation type. Open to community additions via ADR-0004 namespacing."
+          },
+          "target": {
+            "type": "string",
+            "pattern": "^\\[\\[[^\\]]+\\]\\]$",
+            "description": "Wikilink to the target entity, e.g. [[px4-uav]] or [[px4-uav|alias]]."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional free-text note on this relation."
+          }
+        }
+      }
+    }
+  }
+}

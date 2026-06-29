@@ -1,0 +1,87 @@
+# Obsidian vault local state (never commit machine cache)
+vault/.obsidian/workspace*
+vault/.obsidian/cache
+vault/.obsidian/plugins/*/data.json
+vault/.obsidian/plugins/*/*.mjs
+vault/.obsidian/plugins/*/main.js
+vault/.obsidian/plugins/*/styles.css
+
+# Keep plugin manifests and configs for reproducibility (uncomment to ignore entirely)
+# vault/.obsidian/
+
+# Secrets / local env
+.env
+.env.*
+*.local
+secrets/
+
+# Derived outputs (regenerable; keep examples/ only)
+output/
+out/
+dist/
+build/
+
+# Node / tooling caches
+node_modules/
+.pnpm-store/
+.turbo/
+.cache/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temporary AI working artifacts
+.tmp/
+tmp/
+
+# ResumeOS runtime data (ADR-0011/0012/0013/0014/0020) — regenerable, never commit.
+# The vault is the SSOT; everything under .library/ (except READMEs) is a rebuildable
+# projection. .processing/ is transient in-flight ingest state.
+vault/.library/cache/
+vault/.library/index/
+vault/.library/embeddings/
+vault/.library/memory/
+vault/.library/events.jsonl
+vault/.processing/
+
+# Vault binaries (ADR-0011): inbox drops and stored assets are originals, git-ignored
+# by extension so the repo stays lean. The markdown knowledge that REFERENCES them is
+# the committed SSOT. Staged .md notes in inbox/ ARE committed (not matched here).
+vault/assets/**/*.pdf
+vault/assets/**/*.docx
+vault/assets/**/*.doc
+vault/assets/**/*.pptx
+vault/assets/**/*.ppt
+vault/assets/**/*.png
+vault/assets/**/*.jpg
+vault/assets/**/*.jpeg
+vault/assets/**/*.gif
+vault/assets/**/*.mp4
+vault/assets/**/*.mov
+vault/assets/**/*.zip
+vault/inbox/**/*.pdf
+vault/inbox/**/*.docx
+vault/inbox/**/*.doc
+vault/inbox/**/*.pptx
+vault/inbox/**/*.ppt
+vault/inbox/**/*.png
+vault/inbox/**/*.jpg
+vault/inbox/**/*.jpeg
+vault/inbox/**/*.gif
+vault/inbox/**/*.mp4
+vault/inbox/**/*.mov
+vault/inbox/**/*.zip

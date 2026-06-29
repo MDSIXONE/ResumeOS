@@ -1,0 +1,50 @@
+{
+  "entity_type": "project",
+  "entity_id": "yolo-detection",
+  "fields": {
+    "entity_type": "project",
+    "title": "YOLO Detection",
+    "status": "completed",
+    "role": "Developer",
+    "timeline": {
+      "start": "2024-01-01",
+      "end": "2024-06-01",
+      "ongoing": false
+    },
+    "stack": {
+      "hardware": [],
+      "software": [
+        "Python",
+        "PyTorch",
+        "OpenCV"
+      ],
+      "protocol": [],
+      "algorithm": [],
+      "dataset": []
+    },
+    "tags": [
+      "python",
+      "pytorch",
+      "opencv"
+    ],
+    "confidence": "inferred",
+    "sources": [
+      {
+        "kind": "github",
+        "ref": "inbox/yolo-readme.md"
+      }
+    ],
+    "description": "Real-time object detection system for robotics."
+  },
+  "provenance": {
+    "generated_by": "career_builder",
+    "llm": "dummy",
+    "prompt": "career.project.v1",
+    "artifact": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2",
+    "time": "2026-06-28T21:22:43.343008+00:00"
+  },
+  "conflicts": [],
+  "previous_values": {},
+  "version": 1,
+  "is_new": true
+}

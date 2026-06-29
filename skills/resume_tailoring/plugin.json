@@ -1,0 +1,16 @@
+{
+  "$schema": "../../schemas/plugin-manifest.schema.json",
+  "name": "resume_tailoring",
+  "version": "0.1.0",
+  "description": "Tailor a resume to a specific job via a 6-phase, checkpoint-based, anti-hallucination pipeline.",
+  "type": "skill",
+  "license": "MIT",
+  "depends_on": ["resume_builder@1.0.0", "schema@1.0.0"],
+  "hooks": [],
+  "mcp_tools": ["browser:fetch"],
+  "permissions": {
+    "read":  ["vault/career/**", "vault/jobs/**", "schemas/**", "prompts/**", "config/**"],
+    "write": ["output/**", "vault/.library/**"],
+    "deny":  ["vault/.obsidian/**", "vault/career/** as write target"]
+  }
+}

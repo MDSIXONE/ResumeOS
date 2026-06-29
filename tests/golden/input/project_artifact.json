@@ -1,0 +1,26 @@
+{
+  "artifact_type": "project",
+  "provenance": {
+    "source_path": "inbox/yolo-readme.md",
+    "sha256": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2",
+    "detected_type": "readme",
+    "extractor": "readme_parser",
+    "extracted_at": "2026-06-28T21:22:27.537142+00:00",
+    "byte_range": null
+  },
+  "confidence": "inferred",
+  "notes": [],
+  "title": "YOLO Detection",
+  "description": "Real-time object detection system for robotics.",
+  "tech_stack": [
+    "Python",
+    "PyTorch",
+    "OpenCV"
+  ],
+  "repo_url": "https://github.com/user/yolo-detection",
+  "languages": [
+    "Python"
+  ],
+  "readme_text": "# YOLO Detection\nA real-time detection system.\n",
+  "commit_count": 42
+}

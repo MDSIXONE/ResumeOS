@@ -1,0 +1,32 @@
+{
+  "$schema": "../schemas/plugin-manifest.schema.json",
+  "name": "resumeos",
+  "version": "0.1.0",
+  "description": "ResumeOS — an AI-native career operating system built around an Obsidian knowledge base. Bundle of 9 modular Claude Code / OpenCode Skills.",
+  "type": "plugin-bundle",
+  "license": "MIT",
+  "homepage": "https://github.com/RESUMEOS/ResumeOS",
+  "skills": [
+    "skills/career_collector",
+    "skills/career_builder",
+    "skills/resume_builder",
+    "skills/resume_tailoring",
+    "skills/cover_letter",
+    "skills/interview",
+    "skills/resume_review",
+    "skills/job_tracker",
+    "skills/career_update"
+  ],
+  "config": "resumeos.config.yaml",
+  "vault": "vault",
+  "schemas": "schemas",
+  "templates": "templates",
+  "prompts": "prompts",
+  "hooks": ["onVaultChange"],
+  "mcp_tools": [],
+  "permissions": {
+    "read": ["vault/**", "schemas/**", "templates/**", "prompts/**", "docs/**", "examples/**"],
+    "write": ["vault/inbox/**", "vault/career/**", "vault/jobs/**", "output/**"],
+    "deny": ["vault/.obsidian/**"]
+  }
+}

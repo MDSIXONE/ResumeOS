@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://resumeos.dev/schemas/1.0.0/artifacts/assembly.schema.json",
+  "title": "Tailoring Phase-3 Assembly Artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["job_slug", "language", "resume_style", "resume_length", "sections"],
+  "properties": {
+    "job_slug": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "language": { "type": "string", "enum": ["zh", "en"] },
+    "resume_style": { "type": "string", "enum": ["industry", "academic", "research"] },
+    "resume_length": { "type": "string", "enum": ["one_page", "two_page"] },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["title", "items"],
+        "properties": {
+          "title": { "type": "string" },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["entity_id", "bullets", "tailoring_score"],
+              "properties": {
+                "entity_id": { "type": "string" },
+                "role": { "type": ["string", "null"], "description": "Null for skill/education items that have no role." },
+                "org": { "type": ["string", "null"] },
+                "dates": { "type": ["string", "null"], "description": "Null for skill items that have no dates." },
+                "tailoring_score": { "type": "number", "minimum": 0, "maximum": 1 },
+                "bullets": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["text", "provenance"],
+                    "properties": {
+                      "text": { "type": "string" },
+                      "provenance": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": { "type": "string", "description": "entity_id:field citation" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

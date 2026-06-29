@@ -1,0 +1,178 @@
+# ResumeOS — Central Configuration
+# This file is the single configuration surface for the ResumeOS toolchain.
+# Skills read it to know where the vault lives, which schemas to validate against,
+# which language/style defaults to use, and which MCP servers are available.
+
+schema_version: "1.0.0"
+
+# ---------------------------------------------------------------------------
+# Vault
+# ---------------------------------------------------------------------------
+vault:
+  # Path to the Obsidian vault, relative to repo root.
+  path: vault
+  # Entity roots within the vault. Each maps an entity type to its folder.
+  entities:
+    project: career/projects
+    research: career/research
+    competition: career/competitions
+    internship: career/internships
+    opensource: career/opensource
+    award: career/awards
+    education: career/education
+    skill: career/skills
+    job: jobs
+  # Operational folders
+  folders:
+    inbox: inbox
+    canvas: canvas
+    daily: daily
+    periodic: periodic
+
+# ---------------------------------------------------------------------------
+# Schemas
+# ---------------------------------------------------------------------------
+schemas:
+  path: schemas
+  # Strict mode: frontmatter MUST validate against the entity schema.
+  strict: true
+  # When true, unknown frontmatter keys are rejected (flip to false for gradual adoption).
+  additional_properties: false
+
+# ---------------------------------------------------------------------------
+# Templates (Obsidian Templater)
+# ---------------------------------------------------------------------------
+templates:
+  path: templates
+  # Templater syntax delimiter used across all templates.
+  syntax: templater
+
+# ---------------------------------------------------------------------------
+# Prompts (modular, composable prompt fragments consumed by Skills)
+# ---------------------------------------------------------------------------
+prompts:
+  path: prompts
+  # Prompt files are plain Markdown; Skills compose them by reference.
+
+# ---------------------------------------------------------------------------
+# Skills (plugin registry reference; authoritative list in skills/registry.yaml)
+# ---------------------------------------------------------------------------
+skills:
+  path: skills
+  registry: skills/registry.yaml
+  # Which skills are enabled by default when installed as a bundle.
+  enabled_default:
+    - career_collector
+    - career_builder
+    - resume_builder
+    - resume_tailoring
+    - cover_letter
+    - interview
+    - resume_review
+    - job_tracker
+    - career_update
+    # - inbox_ingest            # Phase 4: enable when skill folder is implemented (ADR-0011 Rule 10)
+
+# ---------------------------------------------------------------------------
+# Output (derived documents)
+# ---------------------------------------------------------------------------
+output:
+  path: output
+  # Derived documents are written here, never into the vault.
+  # Examples: resumes, cover letters, interview packs, dashboards.
+  formats:
+    resume: [markdown, docx, latex, jsonresume]
+    cover_letter: [markdown, docx]
+    interview: [markdown]
+  languages: [zh, en]
+
+# ---------------------------------------------------------------------------
+# Defaults
+# ---------------------------------------------------------------------------
+defaults:
+  language: zh
+  resume_style: industry        # industry | academic | research
+  resume_length: one_page       # one_page | two_page
+  date_format: "YYYY-MM-DD"     # ISO 8601 enforced in frontmatter
+  # Anti-hallucination guard. When true, Skills MUST ask instead of inventing.
+  anti_hallucination: true
+
+# ---------------------------------------------------------------------------
+# MCP Integration (future; referenced by docs/guides/mcp-integration.md)
+# ---------------------------------------------------------------------------
+mcp:
+  # Servers are optional and discovered at runtime. Declare known ones here.
+  servers:
+    filesystem:
+      enabled: true
+      scope: vault
+    github:
+      enabled: false            # set true and provide token via env to ingest commit/PR history
+    browser:
+      enabled: false            # for company research / JD scraping
+    google_drive:
+      enabled: false
+    notion:
+      enabled: false
+  # Skills declare which MCP tools they may call in their plugin.json:mcp_tools.
+
+# ---------------------------------------------------------------------------
+# Pipeline (resume_tailoring phased pipeline; see ADR-0006)
+# ---------------------------------------------------------------------------
+pipeline:
+  tailoring:
+    # Checkpoints where the user MUST review before the next phase runs.
+    checkpoints: [research, gap_analysis, assembly]
+    # Each phase produces a validated JSON artifact under output/<job>/artifacts/.
+    artifacts: true
+    # If true, the library self-improves after each run (Phase 5).
+    self_improving: true
+
+# ---------------------------------------------------------------------------
+# Validation & CI
+# ---------------------------------------------------------------------------
+validation:
+  # Tool used by CI to validate frontmatter against schemas.
+  runner: scripts/validate-vault        # a small validator invoked by GitHub Actions
+  on_push: true
+  fail_on_violation: true
+
+# ---------------------------------------------------------------------------
+# Runtime (Phase 3 — Core Runtime; see docs/runtime/README.md)
+# ---------------------------------------------------------------------------
+runtime:
+  # Runtime data root — all index/event/cache/memory data lives here.
+  # Git-ignored (rebuildable from vault + logs). The vault remains SSOT (ADR-0001/0003).
+  data_root: vault/.library
+  subfolders:
+    cache: cache                # ADR-0011: transient OCR/hash/parse cache
+    index: index                # ADR-0012: knowledge-index.json + .stale.json
+    embeddings: embeddings      # ADR-0013: per-entity .vec files
+    memory: memory              # ADR-0020: conversation.jsonl
+  events_log: events.jsonl      # ADR-0014: event bus audit log (file at data_root root, not a subfolder)
+  # Knowledge Index (ADR-0012)
+  index:
+    rebuild_policy: lazy        # lazy = Skills decide per their correctness needs; explicit = resume index only
+    scope: [career, jobs]       # which vault roots to index
+  # Event Bus (ADR-0014)
+  events:
+    delivery: in_process        # v1: in-process for current CLI run; watch mode extends across runs
+    persist: true               # append every event to events.jsonl
+  # Embedding Cache (ADR-0013)
+  embeddings:
+    enabled: false              # opt-in; degrades to keyword search when false or no MCP adapter
+    model: null                 # set via MCP adapter (ADR-0008); e.g. text-embedding-3-small
+  # AI Conversation Memory (ADR-0020)
+  memory:
+    commit: false               # memory is the sole non-rebuildable runtime artifact; opt-in to git-commit
+  # Workflow Engine (ADR-0018)
+  workflows:
+    path: workflows             # declarative YAML workflow files
+  # Importer family (ADR-0019) — CLI dispatch mapping for `resume import <source>`
+  importers:
+    inbox: inbox_ingest         # default (no source arg)
+    github: github_importer
+    notion: notion_importer
+    drive: drive_importer
+    scholar: scholar_importer
+    linkedin: linkedin_importer

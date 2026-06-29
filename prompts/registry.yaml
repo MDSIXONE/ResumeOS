@@ -1,0 +1,396 @@
+# ResumeOS Prompt Registry
+# Authoritative list of all prompt fragments. The agent-runtime loader reads this to resolve
+# prompt ids to file paths, enforce version pins, and load composition dependencies.
+# Adding a prompt = adding a file + adding an entry here. See ADR-0017.
+#
+# Id namespace convention:
+#   prompts/core/*        -> core.<fragment>
+#   prompts/analysis/*    -> analysis.<fragment>
+#   prompts/generation/*  -> generation.<fragment>
+#   skills/<s>/prompts/*  -> <s>.<fragment>
+# Community prompts use the prefix com_<author>.<name> (same convention as skills/registry.yaml).
+
+schema_version: "1.0.0"
+
+prompts:
+  # ── core ───────────────────────────────────────────────────────────────────────
+  - id: core.anti-hallucination
+    version: 0.1.0
+    enabled: true
+    path: prompts/core/anti-hallucination.md
+    description: Contract preamble — every generation must cite vault entities, never fabricate, ask on gap.
+    inputs: [vault entities]
+    outputs: [contract-aware generation]
+    applies: [career_collector, career_builder, resume_builder, resume_tailoring, cover_letter, interview, resume_review]
+    depends_on: []
+
+  - id: core.provenance
+    version: 0.1.0
+    enabled: true
+    path: prompts/core/provenance.md
+    description: Citation rules — entity_id:field traceability on every derived bullet.
+    inputs: [vault entities, derived bullets]
+    outputs: [cited bullets]
+    applies: [resume_builder, resume_tailoring, cover_letter]
+    depends_on: [core.anti-hallucination]
+
+  - id: core.ask-never-invent
+    version: 0.1.0
+    enabled: true
+    path: prompts/core/ask-never-invent.md
+    description: Gap-fill rule — emit a precise follow-up question, never fabricate.
+    inputs: [gap]
+    outputs: [follow-up question]
+    applies: [career_builder, resume_tailoring]
+    depends_on: [core.anti-hallucination]
+
+  # ── analysis ───────────────────────────────────────────────────────────────────
+  - id: analysis.gap-classification
+    version: 0.1.0
+    enabled: true
+    path: prompts/analysis/gap-classification.md
+    description: Classify JD requirements as covered / underdeveloped / missing / misaligned against vault.
+    inputs: [research.json, library.json]
+    outputs: [gaps.json items]
+    applies: [resume_tailoring]
+    depends_on: [core.anti-hallucination, core.ask-never-invent]
+
+  - id: analysis.ats-keyword-extract
+    version: 0.1.0
+    enabled: true
+    path: prompts/analysis/ats-keyword-extract.md
+    description: Extract ATS-relevant keywords and synonyms from a JD into research.json.
+    inputs: [job description]
+    outputs: [research.json: ats_keywords]
+    applies: [resume_tailoring]
+    depends_on: [core.anti-hallucination]
+
+  - id: analysis.company-research
+    version: 0.1.0
+    enabled: true
+    path: prompts/analysis/company-research.md
+    description: Build a factual company profile (mission, culture, hiring style) from JD and optional browser MCP.
+    inputs: [company name, job description]
+    outputs: [research.json: company]
+    applies: [resume_tailoring, cover_letter]
+    depends_on: [core.anti-hallucination]
+
+  # ── generation ─────────────────────────────────────────────────────────────────
+  - id: generation.star-story
+    version: 0.1.0
+    enabled: true
+    path: prompts/generation/star-story.md
+    description: Turn a confirmed project entity into a 4-6 sentence STAR narrative for interviews and resumes.
+    inputs: [project entity]
+    outputs: [STAR narrative]
+    applies: [career_builder, interview]
+    depends_on: [core.anti-hallucination, core.provenance, core.ask-never-invent]
+
+  - id: generation.bullet-rewrite
+    version: 0.1.0
+    enabled: true
+    path: prompts/generation/bullet-rewrite.md
+    description: Reword confirmed vault bullets for impact and JD alignment — no invention allowed.
+    inputs: [confirmed vault bullet, JD context]
+    outputs: [rewritten bullet with citation]
+    applies: [resume_builder, resume_tailoring]
+    depends_on: [core.anti-hallucination, core.provenance]
+
+  - id: generation.resume-section
+    version: 0.1.0
+    enabled: true
+    path: prompts/generation/resume-section.md
+    description: Render one resume section (Projects, Experience, Skills, ...) from validated assembly data.
+    inputs: [assembly.json]
+    outputs: [resume section markdown]
+    applies: [resume_builder, resume_tailoring]
+    depends_on: [core.anti-hallucination, core.provenance, generation.bullet-rewrite]
+
+  # ── career_collector ───────────────────────────────────────────────────────────
+  - id: career_collector.ingest-pdf
+    version: 0.1.0
+    enabled: true
+    path: skills/career_collector/prompts/ingest-pdf.md
+    description: Extract structured career facts from a PDF or DOCX document (resume, transcript, certificate, paper).
+    inputs: [pdf-file | docx-file]
+    outputs: [extracted-facts]
+    applies: [career_collector]
+    depends_on: [core.anti-hallucination]
+
+  - id: career_collector.ingest-github
+    version: 0.1.0
+    enabled: true
+    path: skills/career_collector/prompts/ingest-github.md
+    description: Extract structured career facts from a GitHub repository via MCP tools.
+    inputs: [github-repo-ref]
+    outputs: [extracted-facts]
+    applies: [career_collector]
+    depends_on: [core.anti-hallucination]
+
+  - id: career_collector.ingest-linkedin
+    version: 0.1.0
+    enabled: true
+    path: skills/career_collector/prompts/ingest-linkedin.md
+    description: Extract structured career facts from a LinkedIn data export (PDF or JSON format).
+    inputs: [linkedin-export]
+    outputs: [extracted-facts]
+    applies: [career_collector]
+    depends_on: [core.anti-hallucination]
+
+  - id: career_collector.stage-note
+    version: 0.1.0
+    enabled: true
+    path: skills/career_collector/prompts/stage-note.md
+    description: Assemble a staged inbox note with sources[] provenance from extracted facts.
+    inputs: [extracted-facts, source-kind, source-ref]
+    outputs: [inbox-note]
+    applies: [career_collector]
+    depends_on: [core.anti-hallucination, core.provenance]
+
+  # ── career_builder ─────────────────────────────────────────────────────────────
+  - id: career_builder.enrich-entity
+    version: 0.1.0
+    enabled: true
+    path: skills/career_builder/prompts/enrich-entity.md
+    description: Build a canonical entity note in vault/career/ from classified facts and user answers.
+    inputs: [classified-facts, user-answers, entity-schema]
+    outputs: [enriched-entity-note]
+    applies: [career_builder]
+    depends_on: [core.anti-hallucination, core.provenance]
+
+  - id: career_builder.follow-up-question
+    version: 0.1.0
+    enabled: true
+    path: skills/career_builder/prompts/follow-up-question.md
+    description: Generate a precise, answerable follow-up question for a single detected gap.
+    inputs: [gap]
+    outputs: [follow-up-question]
+    applies: [career_builder]
+    depends_on: [core.anti-hallucination, core.ask-never-invent]
+
+  - id: career_builder.gap-detect
+    version: 0.1.0
+    enabled: true
+    path: skills/career_builder/prompts/gap-detect.md
+    description: Detect gaps (missing / inferred / partial) between classified facts and target entity schema.
+    inputs: [classified-facts, entity-schema]
+    outputs: [gap-list]
+    applies: [career_builder]
+    depends_on: [core.anti-hallucination]
+
+  - id: career_builder.generate-star
+    version: 0.1.0
+    enabled: true
+    path: skills/career_builder/prompts/generate-star.md
+    description: Generate STAR stories from a confirmed entity with citations and anti-hallucination enforced.
+    inputs: [enriched-entity]
+    outputs: [star-stories]
+    applies: [career_builder]
+    depends_on: [core.anti-hallucination, core.provenance, generation.star-story]
+
+  - id: career_builder.generate-interview-questions
+    version: 0.1.0
+    enabled: true
+    path: skills/career_builder/prompts/generate-interview-questions.md
+    description: Generate likely interview questions an enriched entity invites (role / technical / outcome).
+    inputs: [enriched-entity]
+    outputs: [interview-question-list]
+    applies: [career_builder]
+    depends_on: [core.anti-hallucination]
+
+  - id: career_builder.generate-ats-keywords
+    version: 0.1.0
+    enabled: true
+    path: skills/career_builder/prompts/generate-ats-keywords.md
+    description: Extract and confirm ATS-relevant keywords from an enriched entity (confirmed fields only).
+    inputs: [enriched-entity]
+    outputs: [ats-keyword-list]
+    applies: [career_builder]
+    depends_on: [core.anti-hallucination]
+
+  # ── resume_builder ─────────────────────────────────────────────────────────────
+  - id: resume_builder.master-resume
+    version: 0.1.0
+    enabled: true
+    path: skills/resume_builder/prompts/master-resume.md
+    description: Render one resume section from the confirmed vault entity index (master resume, no JD tailoring).
+    inputs: [validated-master-entities]
+    outputs: [master resume sections]
+    applies: [resume_builder]
+    depends_on: [core.anti-hallucination, core.provenance, generation.bullet-rewrite]
+
+  - id: resume_builder.jsonresume-convert
+    version: 0.1.0
+    enabled: true
+    path: skills/resume_builder/prompts/jsonresume-convert.md
+    description: Map rendered resume sections into the JSON Resume schema for round-trip portability.
+    inputs: [rendered resume sections]
+    outputs: [json-resume object]
+    applies: [resume_builder]
+    depends_on: [core.anti-hallucination]
+
+  # ── cover_letter ───────────────────────────────────────────────────────────────
+  - id: cover_letter.cover-letter-section
+    version: 0.1.0
+    enabled: true
+    path: skills/cover_letter/prompts/cover-letter-section.md
+    description: Render a personalized cover letter grounded in confirmed vault facts, no invention.
+    inputs: [job note, selected project entities, skills, education]
+    outputs: [cover letter markdown]
+    applies: [cover_letter]
+    depends_on: [core.anti-hallucination, core.provenance]
+
+  # ── interview ──────────────────────────────────────────────────────────────────
+  - id: interview.behavior-question
+    version: 0.1.0
+    enabled: true
+    path: skills/interview/prompts/behavior-question.md
+    description: Generate 6-10 behavior interview questions grounded in the candidate's real project history.
+    inputs: [vault projects, education, skills]
+    outputs: [behavior questions list]
+    applies: [interview]
+    depends_on: [core.anti-hallucination]
+
+  - id: interview.technical-question
+    version: 0.1.0
+    enabled: true
+    path: skills/interview/prompts/technical-question.md
+    description: Generate 8-15 technical questions from the candidate's confirmed stack fields.
+    inputs: [vault project entities, skill entities]
+    outputs: [technical questions list]
+    applies: [interview]
+    depends_on: [core.anti-hallucination]
+
+  - id: interview.project-question
+    version: 0.1.0
+    enabled: true
+    path: skills/interview/prompts/project-question.md
+    description: Generate 2-4 deep-dive interview questions for a specific project entity.
+    inputs: [project entity]
+    outputs: [project deep-dive questions]
+    applies: [interview]
+    depends_on: [core.anti-hallucination]
+
+  - id: interview.mock-interview
+    version: 0.1.0
+    enabled: true
+    path: skills/interview/prompts/mock-interview.md
+    description: Produce a rehearsed Q&A script mixing behavior, technical, and project questions.
+    inputs: [behavior questions, technical questions, project questions, STAR answers, weakness analysis]
+    outputs: [rehearsal Q&A script]
+    applies: [interview]
+    depends_on: [core.anti-hallucination, interview.behavior-question, interview.technical-question, interview.project-question]
+
+  - id: interview.weakness-analysis
+    version: 0.1.0
+    enabled: true
+    path: skills/interview/prompts/weakness-analysis.md
+    description: Identify thin-vault areas an interviewer could probe; frame honest answers.
+    inputs: [vault entities, optional JD]
+    outputs: [weakness report]
+    applies: [interview]
+    depends_on: [core.anti-hallucination]
+
+  # ── resume_review ──────────────────────────────────────────────────────────────
+  - id: resume_review.ats-check
+    version: 0.1.0
+    enabled: true
+    path: skills/resume_review/prompts/ats-check.md
+    description: Evaluate resume parseability, keyword coverage, and format safety as an ATS would see it.
+    inputs: [resume content, optional JD]
+    outputs: [ATS evaluation]
+    applies: [resume_review]
+    depends_on: [core.anti-hallucination]
+
+  - id: resume_review.weak-bullet-detect
+    version: 0.1.0
+    enabled: true
+    path: skills/resume_review/prompts/weak-bullet-detect.md
+    description: Scan every resume bullet and flag those missing metrics, weak verbs, vague scope, or no citation.
+    inputs: [resume bullets]
+    outputs: [weak bullets list with fix suggestions]
+    applies: [resume_review]
+    depends_on: [core.anti-hallucination]
+
+  - id: resume_review.recruiter-review
+    version: 0.1.0
+    enabled: true
+    path: skills/resume_review/prompts/recruiter-review.md
+    description: Evaluate a resume the way a busy recruiter would on a 6-second skim.
+    inputs: [resume content]
+    outputs: [recruiter evaluation]
+    applies: [resume_review]
+    depends_on: [core.anti-hallucination]
+
+  - id: resume_review.hiring-manager-review
+    version: 0.1.0
+    enabled: true
+    path: skills/resume_review/prompts/hiring-manager-review.md
+    description: Evaluate a resume as a hiring manager would — impact, scope, credibility.
+    inputs: [resume content]
+    outputs: [hiring manager evaluation]
+    applies: [resume_review]
+    depends_on: [core.anti-hallucination]
+
+  - id: resume_review.tech-lead-review
+    version: 0.1.0
+    enabled: true
+    path: skills/resume_review/prompts/tech-lead-review.md
+    description: Evaluate a resume as a senior engineer on a peer panel — depth, accuracy, credible projects.
+    inputs: [resume content]
+    outputs: [tech lead evaluation]
+    applies: [resume_review]
+    depends_on: [core.anti-hallucination]
+
+  # ── job_tracker ────────────────────────────────────────────────────────────────
+  - id: job_tracker.dashboard
+    version: 0.1.0
+    enabled: true
+    path: skills/job_tracker/prompts/dashboard.md
+    description: Render a Markdown dashboard from all validated job notes grouped by status with Dataview query.
+    inputs: [validated-job-notes]
+    outputs: [dashboard-markdown]
+    applies: [job_tracker]
+    depends_on: []
+
+  - id: job_tracker.application-update
+    version: 0.1.0
+    enabled: true
+    path: skills/job_tracker/prompts/application-update.md
+    description: Create or update a job note in vault/jobs/ from an application event.
+    inputs: [application-event, existing-job-note?]
+    outputs: [updated-job-note]
+    applies: [job_tracker]
+    depends_on: [core.anti-hallucination, core.provenance]
+
+  # ── career_update ──────────────────────────────────────────────────────────────
+  - id: career_update.stale-detect
+    version: 0.1.0
+    enabled: true
+    path: skills/career_update/prompts/stale-detect.md
+    description: Detect which derived documents in output/ are stale after a vault entity changes.
+    inputs: [changed-entity-id, derived-assembly-artifacts]
+    outputs: [stale-doc-list]
+    applies: [career_update]
+    depends_on: []
+
+  - id: career_update.enrich-on-change
+    version: 0.1.0
+    enabled: true
+    path: skills/career_update/prompts/enrich-on-change.md
+    description: Re-enrich a vault entity after a change using the career_builder pipeline.
+    inputs: [validated-entity, career-builder-pipeline]
+    outputs: [enriched-entity]
+    applies: [career_update]
+    depends_on: [core.anti-hallucination, career_builder.enrich-entity]
+
+  # Community prompts can be appended here. Use a distinct namespace prefix, e.g.:
+  #  - id: com_alice.cover-letter-cn
+  #    version: 0.0.1
+  #    enabled: false
+  #    path: skills/com_alice_cover_letter/prompts/cover-letter-cn.md
+  #    description: Chinese cover letter generator with formal tone conventions.
+  #    inputs: [job note, selected project entities]
+  #    outputs: [cover letter markdown in zh]
+  #    applies: [com_alice_cover_letter]
+  #    depends_on: [core.anti-hallucination, core.provenance]

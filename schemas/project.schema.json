@@ -1,0 +1,421 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://resumeos.dev/schemas/1.0.0/project.schema.json",
+  "title": "Project",
+  "description": "A career project entity. One Markdown note per project under vault/career/projects/. Frontmatter is validated by this schema; the body holds prose sections (see templates/project.md).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "title",
+    "entity_type",
+    "status",
+    "timeline",
+    "role",
+    "sources"
+  ],
+  "properties": {
+    "entity_type": {
+      "type": "string",
+      "const": "project",
+      "description": "Discriminator; must always be 'project'. Inferred from folder but required for explicit validation."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 2,
+      "description": "Human-readable project title."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Stable slug id, e.g. 'px4-uav'. Used by other entities and artifacts to cite this project."
+    },
+    "timeline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start"
+      ],
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date",
+          "description": "ISO 8601 YYYY-MM-DD."
+        },
+        "end": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "End date, or null if ongoing."
+        },
+        "ongoing": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "planned",
+        "active",
+        "completed",
+        "paused",
+        "abandoned"
+      ],
+      "description": "Lifecycle status."
+    },
+    "role": {
+      "type": "string",
+      "description": "Your role, e.g. 'Team Lead', 'Embedded Engineer', 'Solo'."
+    },
+    "team_size": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "description": "Number of people on the project (including you), or null if solo."
+    },
+    "company": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Hosting company/org, or null if personal/academic project."
+    },
+    "competition": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Competition this project was built for, e.g. 'RoboMaster 2023'. Link with [[...]] in the note."
+    },
+    "stack": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Technical stack, split by layer.",
+      "properties": {
+        "hardware": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "software": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "protocol": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "algorithm": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "dataset": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        }
+      }
+    },
+    "metrics": {
+      "type": "array",
+      "description": "Quantified outcomes. Each must be a confirmed fact (ADR-0007).",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "metric",
+          "value"
+        ],
+        "properties": {
+          "metric": {
+            "type": "string",
+            "description": "What was measured, e.g. 'mAP', 'latency'."
+          },
+          "value": {
+            "type": "string",
+            "description": "The measured value, e.g. '0.87', '12ms'."
+          },
+          "context": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Conditions, e.g. 'on val set'."
+          }
+        }
+      },
+      "default": []
+    },
+    "contribution": {
+      "type": "string",
+      "description": "What YOU did specifically. Prose in body; one-line summary here."
+    },
+    "ats_keywords": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "ATS-relevant keywords extracted/confirmed from this project."
+    },
+    "interview_questions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Likely interview questions this project invites."
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Links to proof. All optional but at least one is strongly encouraged.",
+      "properties": {
+        "github": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        },
+        "paper": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        },
+        "patent": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "presentation": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        },
+        "images": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "demo": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        }
+      }
+    },
+    "related": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Related note ids/titles (graph edges). Also express via [[wikilinks]] in body."
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Obsidian tags, e.g. ['robotics','cv']. Lowercase, kebab-case."
+    },
+    "confidence": {
+      "type": "string",
+      "enum": [
+        "confirmed",
+        "inferred",
+        "missing"
+      ],
+      "default": "confirmed",
+      "description": "Fact-confidence level (ADR-0007). Only 'confirmed' flows into derived docs."
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Provenance: where the facts came from. REQUIRED. Never removed by Skills.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "ref"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "pdf",
+              "docx",
+              "md",
+              "github",
+              "linkedin",
+              "image",
+              "certificate",
+              "paper",
+              "blog",
+              "readme",
+              "commit",
+              "pr",
+              "release",
+              "issue",
+              "manual",
+              "interview"
+            ]
+          },
+          "ref": {
+            "type": "string",
+            "description": "Path/URL/identifier of the source."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "$resumeos": {
+      "type": "object",
+      "description": "ResumeOS extension namespace. Ignored by JSON Resume tools.",
+      "additionalProperties": true,
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "default": "1.0.0"
+        },
+        "library_hints": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "tailoring_score": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "history": {
+      "type": "array",
+      "default": [],
+      "description": "Version history snapshots (ADR-0015). Appended on each entity update by career_builder/career_update. Top-level frontmatter is always the present state; history archives previous values only.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "captured_at",
+          "changed_fields",
+          "previous_values",
+          "reason"
+        ],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Monotonic per-entity version, starts at 1 on creation."
+          },
+          "captured_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 datetime when this snapshot was captured."
+          },
+          "changed_fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Frontmatter field names that changed in this version."
+          },
+          "previous_values": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Map of changed field -> its previous value. Only confirmed previous values (ADR-0007), never inferred."
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "import",
+              "user_edit",
+              "skill_update",
+              "merge"
+            ],
+            "description": "What caused this version bump."
+          }
+        }
+      }
+    },
+    "relations": {
+      "type": "array",
+      "default": [],
+      "description": "Typed directed relations to other entities (ADR-0016). Coexists with the untyped `related[]` field; `relations` is preferred where the relation type carries meaning. Each target MUST be a [[wikilink]] so Obsidian Graph View renders the edge.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "target"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "evidence",
+              "reference",
+              "derived_from",
+              "part_of",
+              "award_for",
+              "author_of",
+              "contributes_to"
+            ],
+            "description": "Relation type. Open to community additions via ADR-0004 namespacing."
+          },
+          "target": {
+            "type": "string",
+            "pattern": "^\\[\\[[^\\]]+\\]\\]$",
+            "description": "Wikilink to the target entity, e.g. [[px4-uav]] or [[px4-uav|alias]]."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional free-text note on this relation."
+          }
+        }
+      }
+    }
+  }
+}

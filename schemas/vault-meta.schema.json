@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://resumeos.dev/schemas/1.0.0/vault-meta.schema.json",
+  "title": "Vault Metadata",
+  "description": "Validates vault/vault.meta.yaml — vault-level metadata. NOT an entity schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["vault_version", "owner", "created_at"],
+
+  "properties": {
+    "vault_version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$",
+      "description": "Vault schema version, e.g. '1.0.0'."
+    },
+    "owner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name":     { "type": "string", "description": "Vault owner's name." },
+        "email":    { "type": ["string", "null"], "format": "email" },
+        "location": { "type": ["string", "null"], "description": "City / region." },
+        "links":    { "type": "array", "items": { "type": "string" }, "default": [], "description": "Public profile URLs (GitHub, LinkedIn, website, etc.)." }
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the vault was created (ISO 8601)."
+    },
+    "default_language": {
+      "type": "string",
+      "enum": ["zh", "en"],
+      "default": "zh",
+      "description": "Primary language for derived documents."
+    },
+    "default_resume_style": {
+      "type": ["string", "null"],
+      "description": "Default resume style, e.g. 'industry', 'academic', 'research'."
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [],
+      "description": "Global tags applied to the vault."
+    },
+    "summary": {
+      "type": ["string", "null"],
+      "description": "High-level career summary, used by Skills for context."
+    }
+  }
+}

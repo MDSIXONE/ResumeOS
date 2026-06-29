@@ -1,0 +1,16 @@
+{
+  "$schema": "../../schemas/plugin-manifest.schema.json",
+  "name": "cover_letter",
+  "version": "0.1.0",
+  "description": "Generate a personalized cover letter for a specific job, grounded only in confirmed vault facts, with optional reuse of resume_tailoring research artifacts.",
+  "type": "skill",
+  "license": "MIT",
+  "depends_on": ["resume_tailoring@1.0.0", "schema@1.0.0"],
+  "hooks": [],
+  "mcp_tools": ["browser:fetch"],
+  "permissions": {
+    "read":  ["vault/career/**", "vault/jobs/**", "schemas/**", "prompts/**", "config/**", "output/<job-slug>/artifacts/research.json"],
+    "write": ["output/**"],
+    "deny":  ["vault/career/** as write target", "vault/jobs/** as write target", "vault/.obsidian/**"]
+  }
+}

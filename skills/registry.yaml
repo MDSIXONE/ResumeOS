@@ -1,0 +1,82 @@
+# ResumeOS Skill Registry
+# Authoritative list of known Skills. The agent-runtime loader reads this to resolve and load
+# Skills. Adding a Skill = adding an entry + a folder under skills/. See ADR-0004.
+
+schema_version: "1.0.0"
+
+skills:
+  - name: career_collector
+    version: 0.1.0
+    path: skills/career_collector
+    enabled: true
+    depends_on: ["schema@1.0.0"]
+    description: Collect raw career material (PDF/DOCX/MD/GitHub/LinkedIn/images/certs) into vault/inbox.
+
+  - name: career_builder
+    version: 0.1.0
+    path: skills/career_builder
+    enabled: true
+    depends_on: ["career_collector@1.0.0", "schema@1.0.0"]
+    description: Enrich the vault, detect gaps, ask follow-ups, generate STAR stories / ATS keywords / interview questions.
+
+  - name: resume_builder
+    version: 0.1.0
+    path: skills/resume_builder
+    enabled: true
+    depends_on: ["schema@1.0.0"]
+    description: Generate a master resume from the vault (zh/en, academic/industry, one/two-page, MD/DOCX/LaTeX/JSON Resume).
+
+  - name: resume_tailoring
+    version: 0.1.0
+    path: skills/resume_tailoring
+    enabled: true
+    depends_on: ["resume_builder@1.0.0", "schema@1.0.0"]
+    description: Tailor a resume to a specific JD via a 6-phase checkpoint pipeline. Anti-hallucination enforced.
+
+  - name: cover_letter
+    version: 0.1.0
+    path: skills/cover_letter
+    enabled: true
+    depends_on: ["resume_tailoring@1.0.0", "schema@1.0.0"]
+    description: Generate personalized cover letters grounded in confirmed vault facts.
+
+  - name: interview
+    version: 0.1.0
+    path: skills/interview
+    enabled: true
+    depends_on: ["career_builder@1.0.0", "schema@1.0.0"]
+    description: Generate interview prep (behavior/technical/project), STAR answers, follow-ups, weakness analysis, mock interview.
+
+  - name: resume_review
+    version: 0.1.0
+    path: skills/resume_review
+    enabled: true
+    depends_on: ["schema@1.0.0"]
+    description: Review any resume (ATS/recruiter/hiring-manager/tech-lead) with actionable suggestions.
+
+  - name: job_tracker
+    version: 0.1.0
+    path: skills/job_tracker
+    enabled: true
+    depends_on: ["schema@1.0.0"]
+    description: Track applications, interviews, offers, rejections, feedback, timeline; generate dashboards.
+
+  - name: career_update
+    version: 0.1.0
+    path: skills/career_update
+    enabled: true
+    depends_on: ["career_builder@1.0.0", "schema@1.0.0"]
+    description: Watch the vault for new/changed files; enrich; mark derived docs stale; prompt regeneration.
+
+  - name: inbox_ingest
+    version: 0.1.0
+    path: skills/inbox_ingest
+    enabled: false             # Phase 4 implementation target (ADR-0011 Rule 10, ADR-0019)
+    depends_on: ["schema@1.0.0"]
+    description: Owns the file-level inbox lifecycle (hash, dedup, classify, OCR, asset storage). Stages pointers for career_collector.
+
+# Community skills can be appended here. Use a distinct namespace prefix, e.g.:
+#  - name: com_example_linkedin_sync
+#    version: 0.0.1
+#    path: skills/com_example_linkedin_sync
+#    enabled: false
