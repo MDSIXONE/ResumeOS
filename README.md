@@ -1,5 +1,7 @@
 # ResumeOS
 
+[English](README.md) | [中文](README.zh-CN.md)
+
 > **Career Knowledge OS — Build your career once, project it anywhere.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
