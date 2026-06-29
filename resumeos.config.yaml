@@ -176,3 +176,25 @@ runtime:
     drive: drive_importer
     scholar: scholar_importer
     linkedin: linkedin_importer
+
+# ---------------------------------------------------------------------------
+# Profile (personal info for resume generation)
+# ---------------------------------------------------------------------------
+# This is NOT career knowledge — it's personal contact info that goes on the
+# resume header. Populated into ResumeIR.basics by the Pipeline.
+# Chinese resume templates use gender/birthDate/ethnicity/politicalStatus.
+profile:
+  name: ""
+  photo: ""                # path to photo file, or base64 data URI
+  email: ""
+  phone: ""
+  gender: ""               # 性别 (used by chinese-resume template)
+  birthDate: ""            # 出生年月 (used by chinese-resume template)
+  ethnicity: ""            # 民族 (used by chinese-resume template)
+  politicalStatus: ""      # 政治面貌 (used by chinese-resume template)
+  location: ""             # 所在地
+  website: ""
+  github: ""
+  linkedin: ""
+  summary: ""              # professional summary (shown by templates with show_summary)
+  self_evaluation: ""      # 自我评价 (shown by templates with show_self_evaluation)

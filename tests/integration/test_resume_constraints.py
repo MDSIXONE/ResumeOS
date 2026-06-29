@@ -242,7 +242,7 @@ class TestRendererIsLeaf:
             pytest.skip("runtime/resume/renderer/ not yet created")
             return
 
-        allowed = {"runtime.resume.ir", "runtime.resume.renderer.base", "runtime.resume"}
+        allowed = {"runtime.resume.ir", "runtime.resume.renderer.base", "runtime.resume", "runtime.resume.template"}
         violations: List[str] = []
         for py_file in renderer_dir.rglob("*.py"):
             if py_file.name == "__init__.py":

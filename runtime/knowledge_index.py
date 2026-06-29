@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -59,6 +59,100 @@ def _parse_frontmatter(text: str) -> Optional[Dict[str, Any]]:
     if not isinstance(data, dict):
         return None
     return data
+
+
+def _flatten_stack(stack: Any) -> List[str]:
+    """Flatten a stack dict (hardware/software/protocol/algorithm/dataset) into a flat list.
+
+    Each category value should be a list of strings. Non-list values are skipped.
+    """
+    if not isinstance(stack, dict):
+        return []
+    result: List[str] = []
+    for items in stack.values():
+        if isinstance(items, list):
+            result.extend(str(i) for i in items)
+    return result
+
+
+def _iso_date(val: Any) -> Optional[str]:
+    """Convert a YAML-parsed date/datetime/string to an ISO 8601 date string.
+
+    Returns None if the value is None or unparseable.
+    """
+    if val is None:
+        return None
+    if isinstance(val, datetime):
+        return val.date().isoformat()
+    if isinstance(val, date):
+        return val.isoformat()
+    if isinstance(val, str):
+        return val[:10]
+    return None
+
+
+def _extract_updated(fm: Dict[str, Any], entity_type: str) -> Optional[str]:
+    """Extract a best-effort last-updated date from frontmatter, type-aware.
+
+    Skills use ``last_used``; projects/jobs use ``timeline.end``; others fall back
+    to ``timeline.end`` if present, else None.
+    """
+    if entity_type == "skill":
+        return _iso_date(fm.get("last_used"))
+    timeline = fm.get("timeline")
+    if isinstance(timeline, dict):
+        return _iso_date(timeline.get("end"))
+    return None
+
+
+def _json_safe(obj: Any) -> Any:
+    """Recursively convert datetime.date/datetime objects to ISO strings for JSON.
+
+    YAML safe_load parses ISO dates as datetime.date, which json.dumps cannot
+    serialise. This walks dicts/lists and converts any date/datetime to .isoformat().
+    """
+    if isinstance(obj, (date, datetime)):
+        return obj.isoformat()
+    if isinstance(obj, dict):
+        return {k: _json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_json_safe(v) for v in obj]
+    return obj
+
+
+def _build_key_fields(fm: Dict[str, Any], entity_type: str) -> Dict[str, Any]:
+    """Extract type-specific high-signal fields for the index entity summary.
+
+    These fields feed the Selector/Ranker matching surface (tags + title alone
+    are too narrow — ats_keywords, stack, synonyms, name, role all carry signal).
+    """
+    kf: Dict[str, Any] = {}
+    if entity_type in ("project", "job"):
+        kf["role"] = fm.get("role", "")
+        kf["stack"] = _flatten_stack(fm.get("stack"))
+        kf["ats_keywords"] = fm.get("ats_keywords") or []
+    elif entity_type == "skill":
+        kf["name"] = fm.get("name", "")
+        kf["synonyms"] = fm.get("synonyms") or []
+        kf["category"] = fm.get("category", "")
+        kf["level"] = fm.get("level", "")
+    elif entity_type == "education":
+        kf["institution"] = fm.get("institution", "")
+        kf["degree"] = fm.get("degree", "")
+    elif entity_type in ("award", "competition"):
+        kf["rank"] = fm.get("rank", "")
+        kf["date"] = _iso_date(fm.get("date"))
+    elif entity_type == "research":
+        kf["doi"] = fm.get("doi", "")
+        kf["venue"] = fm.get("venue", "")
+    # Timeline + metrics are useful for Ranker scoring on all date-bearing entities.
+    timeline = fm.get("timeline")
+    if isinstance(timeline, dict):
+        kf["timeline"] = _json_safe(timeline)
+    metrics = fm.get("metrics")
+    if metrics is not None:
+        kf["metrics"] = _json_safe(metrics)
+    return kf
 
 
 class KnowledgeIndex:
@@ -123,12 +217,17 @@ class KnowledgeIndex:
                     # Relative to vault_root, forward slashes (cross-platform).
                     rel_path_str = md_file.relative_to(self.vault_root).as_posix()
 
+                    # Title: skills use `name`, other entities use `title`.
+                    title = fm.get("title", "") or fm.get("name", "")
+
                     entity: Dict[str, Any] = {
                         "id": fm["id"],
-                        "title": fm.get("title", ""),
+                        "title": title,
                         "type": singular_type,
                         "tags": tags,
                         "path": rel_path_str,
+                        "updated": _extract_updated(fm, singular_type),
+                        "key_fields": _build_key_fields(fm, singular_type),
                     }
                     entities[folder_name].append(entity)
 

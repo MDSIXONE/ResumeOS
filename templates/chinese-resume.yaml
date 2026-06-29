@@ -1,0 +1,62 @@
+# 中文简历模板 (Chinese Resume Template)
+#
+# Standard Chinese resume format:
+#   - Photo at top-right
+#   - Personal info: gender/birthDate/ethnicity/politicalStatus
+#   - Section order: 教育背景→工作经历→项目经验→技能特长→获奖情况→自我评价
+#   - CJK fonts (Microsoft YaHei / SimHei)
+#   - Single-column (ATS-safe)
+
+template_id: chinese-resume
+name: 中文简历
+description: 标准中文简历排版，含照片和个人信息
+ats_safe: true
+cjk: true
+
+# 中文简历惯例: 教育背景优先
+section_order:
+  - education
+  - experience
+  - projects
+  - skills
+  - awards
+  - self_evaluation
+
+# 中文 section 标题
+section_titles:
+  education: 教育背景
+  experience: 工作经历
+  projects: 项目经验
+  skills: 技能特长
+  awards: 获奖情况
+  self_evaluation: 自我评价
+
+# Max items per section
+caps:
+  projects: 4
+  experience: 3
+  education: 2
+  skills: 10
+  awards: 3
+
+# CJK style
+style:
+  font_family: "'Microsoft YaHei', '微软雅黑', 'SimHei', '黑体', sans-serif"
+  primary_color: "#2c3e50"
+  photo_position: top-right  # none | top-right | top-left
+  photo_size: 100px
+
+# 中文个人信息字段
+fields:
+  show_photo: true
+  show_personal_info: true
+  personal_info:
+    - gender        # 性别
+    - birthDate     # 出生年月
+    - ethnicity     # 民族
+    - politicalStatus  # 政治面貌
+    - phone         # 电话
+    - email         # 邮箱
+    - location      # 所在地
+  show_summary: false
+  show_self_evaluation: true

@@ -1,5 +1,9 @@
 """JSONResumeRenderer -- renders ResumeIR to JSON Resume schema (Sprint 5).
 
+Phase 2: Template-aware rendering with support for:
+    - Dynamic basics from ir.basics (name, email, phone, location, profiles)
+    - Summary from ir.summary
+
 Core principle: Resume is just a projection of Knowledge.
 ResumeIR is the intermediate; Renderer is the final step.
 
@@ -26,12 +30,34 @@ class JSONResumeRenderer(Renderer):
 
     def render(self, ir: ResumeIR) -> str:  # noqa: D401
         """Produce a JSON Resume string from *ir*."""
+        # Build basics from ir.basics
+        basics_dict = {
+            "name": ir.basics.get("name", "ResumeOS User"),
+            "label": ir.target_company or "Software Engineer",
+            "email": ir.basics.get("email", ""),
+            "phone": ir.basics.get("phone", ""),
+            "website": ir.basics.get("website", ""),
+        }
+
+        # Location (if available)
+        if ir.basics.get("location"):
+            basics_dict["location"] = {"city": ir.basics.get("location")}
+
+        # Profiles (GitHub, LinkedIn, etc.)
+        profiles = []
+        if ir.basics.get("linkedin"):
+            profiles.append({"network": "LinkedIn", "username": "", "url": ir.basics["linkedin"]})
+        if ir.basics.get("github"):
+            profiles.append({"network": "GitHub", "username": "", "url": ir.basics["github"]})
+        if profiles:
+            basics_dict["profiles"] = profiles
+
+        # Summary (if available)
+        if ir.summary:
+            basics_dict["summary"] = ir.summary
+
         data: Dict[str, Any] = {
-            "basics": {
-                "name": "ResumeOS User",
-                "label": ir.target_company or "Software Engineer",
-                "summary": "",
-            },
+            "basics": basics_dict,
             "work": [],
             "projects": [],
             "education": [],

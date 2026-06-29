@@ -1,0 +1,48 @@
+# Classic ATS Template
+#
+# Single-column, skills-first ordering. No photo. ATS gold standard.
+# This is the refactored default layout (previously hardcoded in layout.py).
+
+template_id: classic-ats
+name: Classic ATS
+description: Single-column ATS-optimized layout. Skills-first order.
+ats_safe: true
+cjk: false
+
+# Section ordering (ATS-friendly: skills first)
+section_order:
+  - skills
+  - experience
+  - projects
+  - education
+  - awards
+
+# Section display titles
+section_titles:
+  skills: Skills
+  experience: Work Experience
+  projects: Projects
+  education: Education
+  awards: Awards & Honors
+
+# Max items per section (one-page)
+caps:
+  projects: 4
+  experience: 3
+  education: 2
+  skills: 10
+  awards: 3
+
+# Style
+style:
+  font_family: "'Segoe UI', Helvetica, Arial, sans-serif"
+  primary_color: "#2a6496"
+  photo_position: none  # none | top-right | top-left
+
+# Personal info fields to display
+fields:
+  show_photo: false
+  show_personal_info: false
+  personal_info: []
+  show_summary: false
+  show_self_evaluation: false

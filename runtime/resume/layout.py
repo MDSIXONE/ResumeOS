@@ -1,4 +1,4 @@
-"""Layout — section grouping and page constraints for Resume Assembly (Sprint 5).
+"""Layout — section grouping and page constraints for Resume Assembly.
 
 Per user directive (Sprint 5):
     Resume is just a projection of the Career Knowledge Base.
@@ -8,8 +8,12 @@ The Layout stage:
     1. Groups ResumeItems by their section field
     2. Creates ResumeSection objects with display titles
     3. Applies page constraints (one-page = cap items per section)
-    4. Orders sections in ATS-friendly order (skills first)
+    4. Orders sections according to the active template's section_order
     5. Produces the final ResumeIR
+
+When a TemplateConfig is provided, its section_order, section_titles, and caps
+override the hardcoded defaults. This enables Chinese resume ordering
+(教育背景→工作经历→...) and Chinese section titles (技能特长 instead of Skills).
 
 NO LLM — pure rule-based layout logic.
 """
@@ -18,13 +22,14 @@ from __future__ import annotations
 from typing import Dict, List, Optional
 
 from runtime.resume.ir import ResumeIR, ResumeItem, ResumeSection
+from runtime.resume.template import TemplateConfig
 
 
 # ---------------------------------------------------------------------------
-# Section display titles
+# Fallback defaults (used when no TemplateConfig is provided — backward compat)
 # ---------------------------------------------------------------------------
 
-_SECTION_TITLES: Dict[str, str] = {
+_FALLBACK_TITLES: Dict[str, str] = {
     "skills": "Skills",
     "experience": "Work Experience",
     "projects": "Projects",
@@ -32,11 +37,7 @@ _SECTION_TITLES: Dict[str, str] = {
     "awards": "Awards & Honors",
 }
 
-# ---------------------------------------------------------------------------
-# One-page layout: max items per section
-# ---------------------------------------------------------------------------
-
-_ONE_PAGE_CAPS: Dict[str, int] = {
+_FALLBACK_CAPS: Dict[str, int] = {
     "projects": 4,
     "experience": 3,
     "education": 2,
@@ -44,11 +45,7 @@ _ONE_PAGE_CAPS: Dict[str, int] = {
     "awards": 3,
 }
 
-# ---------------------------------------------------------------------------
-# Default section order (ATS-friendly: skills first)
-# ---------------------------------------------------------------------------
-
-_DEFAULT_SECTION_ORDER: List[str] = [
+_FALLBACK_SECTION_ORDER: List[str] = [
     "skills",
     "experience",
     "projects",
@@ -66,7 +63,11 @@ class Layout:
     The Layout is responsible for:
         - Grouping items by section
         - Applying page constraints (one-page = cap items per section)
-        - Ordering sections (skills first for ATS compatibility)
+        - Ordering sections per the active template (or fallback defaults)
+        - Setting section display titles per the active template
+
+    When a TemplateConfig is provided, section_order/titles/caps come from the
+    template YAML (e.g. Chinese resume uses 教育背景→工作经历→...).
 
     NO LLM — pure rule-based layout logic.
     """
@@ -81,23 +82,29 @@ class Layout:
         self,
         items: List[ResumeItem],
         layout_mode: str = "one-page",
+        template: Optional[TemplateConfig] = None,
     ) -> ResumeIR:
         """Group items into sections and produce a ResumeIR.
 
         Args:
             items: Ranked ResumeItems (from Ranker), already sorted by rank_score.
             layout_mode: "one-page" or "two-page". One-page caps items per section.
+            template: Optional TemplateConfig. When provided, its section_order,
+                section_titles, and caps are used instead of the hardcoded defaults.
 
         Returns:
             ResumeIR with sections, section_order, and provenance metadata.
-
-        Behavior:
-            - Group items by their section field
-            - For one-page: cap each section to _ONE_PAGE_CAPS limits
-            - Create ResumeSection objects with display titles
-            - Order sections according to _DEFAULT_SECTION_ORDER
-            - Set layout and provenance metadata on ResumeIR
         """
+        # -- Resolve section order, titles, caps from template or fallback --
+        if template is not None:
+            section_order = template.section_order or _FALLBACK_SECTION_ORDER
+            caps = template.caps if layout_mode == "one-page" else {}
+            template_id = template.template_id
+        else:
+            section_order = _FALLBACK_SECTION_ORDER
+            caps = _FALLBACK_CAPS if layout_mode == "one-page" else {}
+            template_id = "classic-ats"
+
         # -- Step 1: Group items by section --
         section_groups: Dict[str, List[ResumeItem]] = {}
         for item in items:
@@ -107,21 +114,23 @@ class Layout:
             section_groups[sec].append(item)
 
         # -- Step 2: Apply one-page caps --
-        caps = _ONE_PAGE_CAPS if layout_mode == "one-page" else {}
         for section_name, section_items in section_groups.items():
             cap = caps.get(section_name)
             if cap is not None and len(section_items) > cap:
-                # Keep only the top 'cap' items (already sorted by rank_score descending)
                 section_groups[section_name] = section_items[:cap]
 
         # -- Step 3: Create ResumeSection objects --
         sections: List[ResumeSection] = []
-        for section_name in _DEFAULT_SECTION_ORDER:
+        for section_name in section_order:
             section_items = section_groups.get(section_name)
             if not section_items:
                 continue  # Skip empty sections
 
-            display_title = _SECTION_TITLES.get(section_name, section_name.title())
+            # Title: from template, or fallback, or title-cased
+            if template is not None:
+                display_title = template.get_section_title(section_name)
+            else:
+                display_title = _FALLBACK_TITLES.get(section_name, section_name.title())
             sections.append(ResumeSection(
                 name=section_name,
                 title=display_title,
@@ -129,15 +138,17 @@ class Layout:
             ))
 
         # -- Step 4: Build ResumeIR --
-        section_order = [s.name for s in sections]
+        actual_order = [s.name for s in sections]
 
         ir = ResumeIR(
             sections=sections,
             layout=layout_mode,
-            section_order=section_order,
+            section_order=actual_order,
+            template_id=template_id,
             provenance={
                 "generated_by": "resume_assembly_engine",
                 "layout": layout_mode,
+                "template": template_id,
             },
         )
 

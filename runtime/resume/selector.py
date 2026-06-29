@@ -26,24 +26,25 @@ _STOPWORDS: Set[str] = {
     "experience",
 }
 
-
 def _extract_keywords(jd: str) -> List[str]:
     """Extract meaningful keywords from JD text.
 
-    Process: lowercase, split on non-alphanumeric, filter stopwords,
-    keep terms >= 2 chars.
+    Process: lowercase, tokenize on non-word boundaries (Unicode-aware — keeps
+    CJK characters like 智能体/规划/决策), filter stopwords, keep terms >= 2 chars.
 
     Args:
         jd: Job description text.
 
     Returns:
-        List of lowercase keywords (deduplicated).
+        List of lowercase keywords (deduplicated, order preserved).
     """
     if not jd:
         return []
 
-    # Lowercase and split on non-alphanumeric
-    tokens = re.split(r"[^a-z0-9]+", jd.lower())
+    # Unicode-aware tokenisation: [^\W_] matches letters + digits in any script
+    # (Latin, CJK, Cyrillic, etc.) but excludes underscore. This preserves
+    # Chinese terms like "智能体", "向量检索" instead of dropping them.
+    tokens = re.findall(r"[^\W_]+", jd.lower(), flags=re.UNICODE)
 
     # Filter stopwords and short tokens
     keywords = [
@@ -60,6 +61,65 @@ def _extract_keywords(jd: str) -> List[str]:
             deduped.append(kw)
 
     return deduped
+
+
+def build_searchable_set(entity: Dict) -> Set[str]:
+    """Collect all lowercase searchable strings from an entity summary.
+
+    Matches against every field that carries keyword signal:
+        - title (falls back to key_fields.name for skills)
+        - tags
+        - key_fields.name       (skill canonical name)
+        - key_fields.role       (project/job role)
+        - key_fields.stack      (flattened tech stack list)
+        - key_fields.ats_keywords
+        - key_fields.synonyms   (skill aliases)
+        - key_fields.category   (skill category)
+
+    Scalar string fields are tokenised so that ``"robotics"`` matches a title
+    like ``"Advanced Robotics System"``. Multi-word phrases (e.g. ``"computer
+    vision"``, ``"智能体开发"``) are added as whole strings too so exact phrase
+    matching works. This is the shared matching surface used by both Selector
+    and Ranker. Adding a field here automatically widens JD relevance matching.
+    """
+    result: Set[str] = set()
+
+    def _add_text(val: str) -> None:
+        """Add a string value: both as-is (lower) and tokenised into words."""
+        s = str(val).lower().strip()
+        if not s:
+            return
+        result.add(s)
+        for tok in re.findall(r"[^\W_]+", s, flags=re.UNICODE):
+            if len(tok) >= 2:
+                result.add(tok)
+
+    def _add_list(items: Any) -> None:
+        if isinstance(items, list):
+            for item in items:
+                _add_text(item)
+
+    # Title (already falls back to name in KnowledgeIndex.build)
+    _add_text(entity.get("title", ""))
+
+    # Tags
+    _add_list(entity.get("tags"))
+
+    # Key fields (type-specific high-signal fields from the index)
+    kf = entity.get("key_fields") or {}
+
+    # Scalar string fields
+    for key in ("name", "role", "category"):
+        _add_text(kf.get(key, ""))
+
+    # List fields
+    for key in ("stack", "ats_keywords", "synonyms"):
+        _add_list(kf.get(key))
+
+    # Also check top-level name (for entities not yet index-rebuilt)
+    _add_text(entity.get("name", ""))
+
+    return result
 
 
 class Selector:
@@ -115,24 +175,16 @@ class Selector:
         """Check if entity matches any JD keyword.
 
         Args:
-            entity: Entity dict with keys id, title, type, tags, path.
+            entity: Entity dict with keys id, title, type, tags, path,
+                    optionally key_fields (from KnowledgeIndex).
             keywords: List of JD keywords (lowercase).
 
         Returns:
-            True if at least one keyword matches entity tags or title.
+            True if at least one keyword appears in the entity's searchable
+            surface (title, tags, name, role, stack, ats_keywords, synonyms).
         """
-        # Normalize entity tags to lowercase strings
-        tags_raw = entity.get("tags", [])
-        tags = [str(t).lower() for t in tags_raw] if tags_raw else []
-
-        # Normalize title
-        title = str(entity.get("title", "")).lower()
-
-        # Check overlap
+        searchable = build_searchable_set(entity)
         for kw in keywords:
-            if kw in tags:
+            if kw in searchable:
                 return True
-            if kw in title:
-                return True
-
         return False

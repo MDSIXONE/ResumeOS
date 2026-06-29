@@ -19,6 +19,7 @@ from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from runtime.resume.ir import ResumeExplanation, ResumeItem
+from runtime.resume.selector import build_searchable_set
 
 
 # ---------------------------------------------------------------------------
@@ -62,10 +63,14 @@ _STOPWORDS: frozenset = frozenset({
 # ---------------------------------------------------------------------------
 
 def _extract_keywords(text: str) -> Set[str]:
-    """Extract meaningful keywords from JD text (same logic as Selector)."""
+    """Extract meaningful keywords from JD text (same logic as Selector).
+
+    Unicode-aware: keeps CJK characters (智能体/规划/决策) instead of
+    dropping them as non-ASCII-alphanumeric separators.
+    """
     if not text:
         return set()
-    words = re.split(r"[^a-z0-9+]+", text.lower())
+    words = re.findall(r"[^\W_]+", text.lower(), flags=re.UNICODE)
     return {w for w in words if w and w not in _STOPWORDS and len(w) >= 2}
 
 
@@ -73,19 +78,19 @@ def _count_keyword_overlap(
     entity: Dict[str, Any],
     keywords: Set[str],
 ) -> Tuple[int, List[str]]:
-    """Count how many JD keywords overlap with an entity's tags and title.
+    """Count how many JD keywords overlap with the entity's searchable surface.
+
+    Matches against title, tags, name, role, stack, ats_keywords, synonyms —
+    the full surface from ``build_searchable_set``.
 
     Returns:
         (overlap_count, sorted list of matched keyword strings)
     """
-    tags = entity.get("tags") or []
-    tags_lower = {str(t).lower() for t in tags}
-    title = str(entity.get("title", "")).lower()
+    searchable = build_searchable_set(entity)
 
     matched: Set[str] = set()
     for kw in keywords:
-        kw_lower = kw.lower()
-        if kw_lower in tags_lower or kw_lower in title:
+        if kw.lower() in searchable:
             matched.add(kw)
 
     return len(matched), sorted(matched)
@@ -129,7 +134,8 @@ def _compute_rank_score(
     kw_score = min(overlap_count / total_kw, 1.0) * 0.5
 
     # --- recency score (0.0 - 0.3) ---
-    timeline = entity.get("timeline")
+    kf = entity.get("key_fields") or {}
+    timeline = kf.get("timeline") or entity.get("timeline")
     if isinstance(timeline, dict):
         end_val = timeline.get("end")
     else:
@@ -148,7 +154,7 @@ def _compute_rank_score(
         rec_score = 0.0
 
     # --- impact score (0.0 - 0.2) ---
-    metrics = entity.get("metrics")
+    metrics = kf.get("metrics") or entity.get("metrics")
     if metrics is not None and isinstance(metrics, (list, dict)) and len(metrics) > 0:
         imp_score = 0.2
     else:
@@ -210,15 +216,18 @@ class Ranker:
             # -- section --
             section = _ENTITY_TYPE_TO_SECTION.get(entity_type, "projects")
 
-            # -- content (gather all relevant fields from entity dict) --
+            # -- content (gather all relevant fields from entity dict + key_fields) --
             content: Dict[str, Any] = {}
+            kf = entity.get("key_fields") or {}
             for key in (
                 "role", "timeline", "stack", "metrics", "contribution",  # project / job
                 "proficiency", "level", "last_used", "category",          # skill
                 "institution", "degree",                                   # education
                 "rank", "date",                                            # award
             ):
-                if key in entity:
+                if key in kf:
+                    content[key] = kf[key]
+                elif key in entity:
                     content[key] = entity[key]
 
             # -- keyword overlap --

@@ -1,5 +1,12 @@
 """HTMLRenderer -- renders ResumeIR to a full HTML5 document (Sprint 5).
 
+Phase 2: Template-aware rendering with support for:
+    - Dynamic fonts and colors from TemplateConfig
+    - Photo rendering (file path or base64 data URI)
+    - Personal info blocks (gender, birthDate, ethnicity, etc.)
+    - Professional summary section
+    - Self-evaluation section (自我评价)
+
 Core principle: Resume is just a projection of Knowledge.
 ResumeIR is the intermediate; Renderer is the final step.
 
@@ -10,29 +17,56 @@ No LLM. Pure template rendering. stdlib only (html.escape for safety).
 from __future__ import annotations
 
 import html
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from runtime.resume.ir import ResumeIR
 from runtime.resume.renderer.base import Renderer
+from runtime.resume.template import TemplateConfig
 
 
-_CSS = """\
-body {
-    font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+_CSS_TEMPLATE = """\
+body {{
+    font-family: {font_family};
     max-width: 800px;
     margin: 2em auto;
     padding: 0 1em;
     color: #333;
     line-height: 1.6;
-}
-h1 { border-bottom: 2px solid #2a6496; padding-bottom: 0.3em; }
-h2 { color: #2a6496; margin-top: 1.5em; border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
-h3 { margin-bottom: 0.2em; }
-.section { margin-bottom: 1em; }
-.item { margin-bottom: 1em; }
-.meta { color: #666; font-size: 0.9em; }
-ul { margin-top: 0.3em; }
+}}
+h1 {{ border-bottom: 2px solid {primary_color}; padding-bottom: 0.3em; }}
+h2 {{ color: {primary_color}; margin-top: 1.5em; border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }}
+h3 {{ margin-bottom: 0.2em; }}
+.section {{ margin-bottom: 1em; }}
+.item {{ margin-bottom: 1em; }}
+.meta {{ color: #666; font-size: 0.9em; }}
+ul {{ margin-top: 0.3em; }}
+.photo {{ float: {float_position}; margin-left: 20px; margin-bottom: 10px; }}
+.personal-info {{ margin: 10px 0; font-size: 0.95em; }}
+.personal-info span {{ margin-right: 15px; }}
 """
+
+
+# Chinese labels for personal info fields
+_PERSONAL_INFO_LABELS_ZH = {
+    "gender": "性别",
+    "birthDate": "出生年月",
+    "ethnicity": "民族",
+    "politicalStatus": "政治面貌",
+    "phone": "电话",
+    "email": "邮箱",
+    "location": "所在地",
+}
+
+# English labels for personal info fields
+_PERSONAL_INFO_LABELS_EN = {
+    "gender": "Gender",
+    "birthDate": "Date of Birth",
+    "ethnicity": "Ethnicity",
+    "politicalStatus": "Political Status",
+    "phone": "Phone",
+    "email": "Email",
+    "location": "Location",
+}
 
 
 class HTMLRenderer(Renderer):
@@ -45,34 +79,82 @@ class HTMLRenderer(Renderer):
 
     def render(self, ir: ResumeIR) -> str:  # noqa: D401
         """Produce an HTML resume string from *ir*."""
+        # Load template
+        template = TemplateConfig.load(ir.template_id) if ir.template_id else TemplateConfig.default()
+
         parts: List[str] = []
 
-        # Document head
+        # Document head with template-specific CSS
         parts.append("<!DOCTYPE html>")
         parts.append('<html lang="en">')
         parts.append("<head>")
         parts.append('<meta charset="utf-8">')
-        parts.append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
+        parts.append('<meta name="viewport" content="width=device-width, initial-scale=1">')
         parts.append("<title>Resume</title>")
-        parts.append(f"<style>{_CSS}</style>")
+
+        # Build CSS with template colors and fonts
+        float_position = "right" if template.photo_position == "top-right" else "left"
+        css = _CSS_TEMPLATE.format(
+            font_family=html.escape(template.font_family),
+            primary_color=html.escape(template.primary_color),
+            float_position=float_position,
+        )
+        parts.append(f"<style>{css}</style>")
         parts.append("</head>")
         parts.append("<body>")
 
-        # Name / title
-        name = html.escape("ResumeOS User")
+        # Header section with optional photo
+        parts.append('<div class="header">')
+
+        # Photo (if enabled and available)
+        if template.show_photo and ir.basics.get("photo"):
+            parts.append(self._render_photo(
+                photo=ir.basics.get("photo", ""),
+                position=template.photo_position,
+                size=template.photo_size,
+            ))
+
+        # Name
+        name = html.escape(ir.basics.get("name", "ResumeOS User"))
         parts.append(f"<h1>{name}</h1>")
+
+        # Personal info block (if enabled)
+        if template.show_personal_info:
+            parts.append(self._render_personal_info(
+                basics=ir.basics,
+                fields=template.personal_info_fields,
+                template=template,
+            ))
+
+        parts.append("</div>")
 
         if ir.target_company:
             parts.append(f'<p class="meta">{html.escape(ir.target_company)}</p>')
 
+        # Summary section (if enabled and available)
+        if template.show_summary and ir.summary:
+            parts.append(f"<h2>{html.escape('Summary')}</h2>")
+            parts.append(f"<p>{html.escape(ir.summary)}</p>")
+
         # Sections
         ordered = self._ordered_sections(ir)
         for section in ordered:
+            # Skip self_evaluation section - it will be rendered separately
+            if section.name == "self_evaluation":
+                continue
             parts.append(f"<h2>{html.escape(section.title)}</h2>")
             parts.append('<div class="section">')
             for item in section.items:
                 parts.append(self._render_item(item, section.name))
             parts.append("</div>")
+
+        # Self-evaluation section (if enabled and available)
+        if template.show_self_evaluation and ir.self_evaluation:
+            title = template.get_section_title("self_evaluation")
+            parts.append(self._render_self_evaluation(
+                text=ir.self_evaluation,
+                title=title,
+            ))
 
         parts.append("</body>")
         parts.append("</html>")
@@ -83,6 +165,69 @@ class HTMLRenderer(Renderer):
 
     def format_name(self) -> str:  # noqa: D102
         return "HTML"
+
+    # -- New helpers (Phase 2) ----------------------------------------------
+
+    def _render_photo(self, photo: str, position: str, size: str) -> str:
+        """Render a photo element.
+
+        Args:
+            photo: File path or base64 data URI (e.g. "data:image/jpeg;base64,...")
+            position: "top-right" or "top-left"
+            size: CSS size (e.g. "100px")
+
+        Returns:
+            HTML img tag with positioning class
+        """
+        # Use photo as src (could be file path or data URI)
+        src = html.escape(photo)
+        return f'<img src="{src}" alt="Photo" class="photo" style="width: {html.escape(size)}; height: {html.escape(size)};">'
+
+    def _render_personal_info(
+        self,
+        basics: Dict[str, Any],
+        fields: List[str],
+        template: TemplateConfig,
+    ) -> str:
+        """Render a personal info block.
+
+        Args:
+            basics: Personal info dict from ResumeIR
+            fields: List of field names to display (from template)
+            template: TemplateConfig for language detection
+
+        Returns:
+            HTML div with personal info spans
+        """
+        # Choose label language based on template
+        if template.cjk:
+            labels = _PERSONAL_INFO_LABELS_ZH
+        else:
+            labels = _PERSONAL_INFO_LABELS_EN
+
+        parts: List[str] = ['<div class="personal-info">']
+        for field_name in fields:
+            value = basics.get(field_name)
+            if value:
+                label = labels.get(field_name, field_name)
+                parts.append(f'<span><strong>{label}:</strong> {html.escape(str(value))}</span>')
+        parts.append("</div>")
+        return "\n".join(parts)
+
+    def _render_self_evaluation(self, text: str, title: str) -> str:
+        """Render a self-evaluation section.
+
+        Args:
+            text: Self-evaluation text
+            title: Section title (e.g. "自我评价")
+
+        Returns:
+            HTML section with heading and paragraph
+        """
+        parts: List[str] = []
+        parts.append(f"<h2>{html.escape(title)}</h2>")
+        parts.append(f"<p>{html.escape(text)}</p>")
+        return "\n".join(parts)
 
     # -- Helpers ------------------------------------------------------------
 
@@ -167,7 +312,7 @@ class HTMLRenderer(Renderer):
 
     @staticmethod
     def _render_skill(title: str, content: Dict[str, Any]) -> str:
-        level = html.escape(str(content.get("level", content.get("proficiency", ""))))
+        level = html.escape(str(content.get("level", content.get("proficiency", []))))
         return f'<div class="item"><p><strong>{title}</strong> (proficiency: {level})</p></div>'
 
     @staticmethod

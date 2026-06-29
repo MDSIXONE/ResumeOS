@@ -1,0 +1,28 @@
+# ResumeOS Template Registry
+#
+# Each template is a YAML file under templates/ that defines:
+#   - section ordering (e.g. Chinese: education→experience→projects→skills→self_evaluation)
+#   - section display titles (e.g. "教育背景" instead of "Education")
+#   - item caps per section
+#   - style options (font, color, photo position)
+#   - which personal info fields to show
+#
+# Templates are loaded by runtime/resume/template.py:TemplateConfig.load().
+# The Pipeline accepts a template_id and passes the TemplateConfig to Layout + Renderers.
+
+templates:
+  - id: classic-ats
+    name: Classic ATS
+    description: Single-column ATS-optimized layout. Skills-first order. No photo.
+    file: classic-ats.yaml
+    ats_safe: true
+    cjk: false
+    default: true
+
+  - id: chinese-resume
+    name: 中文简历
+    description: 标准中文简历排版，含照片和个人信息。教育背景优先。
+    file: chinese-resume.yaml
+    ats_safe: true
+    cjk: true
+    default: false

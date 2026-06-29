@@ -9,7 +9,7 @@ It is a thin wrapper around ResumeAssemblyPipeline representing the
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from runtime.resume.pipeline import ResumeAssemblyPipeline
 
@@ -37,6 +37,10 @@ class Tailoring:
         kb_index: "KnowledgeIndex",
         jd: str,
         company: str = "",
+        template_id: str = "",
+        basics: Optional[Dict[str, Any]] = None,
+        summary: str = "",
+        self_evaluation: str = "",
     ) -> "ResumeIR":
         """Produce a JD-tailored ResumeIR from Knowledge.
 
@@ -44,6 +48,11 @@ class Tailoring:
             kb_index: KnowledgeIndex to query (read-only, NEVER modified)
             jd: Job description text
             company: Target company name (optional, for metadata)
+            template_id: Layout template ID (e.g. 'chinese-resume').
+                Empty = use default ('classic-ats').
+            basics: Personal info dict (name, photo, email, phone, gender, etc.).
+            summary: Professional summary text.
+            self_evaluation: 自我评价 text.
 
         Returns:
             ResumeIR tailored to the given JD
@@ -51,5 +60,13 @@ class Tailoring:
         Constraint:
             kb_index is NEVER modified. Tailoring only reads Knowledge.
         """
-        ir = self._pipeline.assemble(kb_index, jd=jd, company=company)
+        ir = self._pipeline.assemble(
+            kb_index,
+            jd=jd,
+            company=company,
+            template_id=template_id,
+            basics=basics,
+            summary=summary,
+            self_evaluation=self_evaluation,
+        )
         return ir

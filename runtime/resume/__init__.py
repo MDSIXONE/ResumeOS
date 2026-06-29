@@ -17,6 +17,7 @@ from runtime.resume.ir import (
     ResumeItem,
     ResumeExplanation,
 )
+from runtime.resume.template import TemplateConfig
 from runtime.resume.renderer.base import Renderer
 from runtime.resume.selector import Selector
 from runtime.resume.ranker import Ranker
@@ -30,6 +31,7 @@ __all__ = [
     "ResumeSection",
     "ResumeItem",
     "ResumeExplanation",
+    "TemplateConfig",
     "Renderer",
     "Selector",
     "Ranker",

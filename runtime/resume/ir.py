@@ -185,14 +185,31 @@ class ResumeIR:
     target_company: str = ""
     """Company name (empty if generic)."""
 
+    template_id: str = "classic-ats"
+    """Which layout template was used (e.g. 'classic-ats', 'chinese-resume')."""
+
     sections: List[ResumeSection] = field(default_factory=list)
-    """Ordered resume sections. Order is determined by Layout."""
+    """Ordered resume sections. Order is determined by Layout + template."""
 
     layout: str = "one-page"
     """Layout mode: 'one-page' or 'two-page'."""
 
     section_order: List[str] = field(default_factory=list)
-    """Ordered section names, e.g. ['skills', 'experience', 'projects', 'education', 'awards']."""
+    """Ordered section names, e.g. ['education', 'experience', 'projects', ...]."""
+
+    basics: Dict[str, Any] = field(default_factory=dict)
+    """Personal info: name, photo, email, phone, gender, birthDate, ethnicity,
+    politicalStatus, location, website, github, linkedin.
+    Populated from resumeos.config.yaml:profile. Needed for Chinese resume
+    (photo + personal info) and any template that shows contact details."""
+
+    summary: str = ""
+    """Professional summary / profile statement. Optional; shown by templates
+    that have fields.show_summary=true."""
+
+    self_evaluation: str = ""
+    """自我评价 (self-evaluation). Chinese resume convention, distinct from
+    summary. Shown by templates that have fields.show_self_evaluation=true."""
 
     created_at: str = ""
     """ISO 8601 timestamp (auto-filled if empty)."""
@@ -222,9 +239,13 @@ class ResumeIR:
             "ir_id": self.ir_id,
             "target_jd": self.target_jd,
             "target_company": self.target_company,
+            "template_id": self.template_id,
             "sections": [s.to_dict() for s in self.sections],
             "layout": self.layout,
             "section_order": self.section_order,
+            "basics": self.basics,
+            "summary": self.summary,
+            "self_evaluation": self.self_evaluation,
             "created_at": self.created_at,
             "provenance": self.provenance,
         }
@@ -235,9 +256,13 @@ class ResumeIR:
             ir_id=d.get("ir_id", ""),
             target_jd=d.get("target_jd", ""),
             target_company=d.get("target_company", ""),
+            template_id=d.get("template_id", "classic-ats"),
             sections=[ResumeSection.from_dict(s) for s in d.get("sections", [])],
             layout=d.get("layout", "one-page"),
             section_order=d.get("section_order", []),
+            basics=d.get("basics", {}),
+            summary=d.get("summary", ""),
+            self_evaluation=d.get("self_evaluation", ""),
             created_at=d.get("created_at", ""),
             provenance=d.get("provenance", {}),
         )

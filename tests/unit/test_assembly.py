@@ -246,6 +246,158 @@ class TestSelectorUnit:
         selected = selector.select(entities, jd="python developer")
         assert len(selected) == 1  # "python" in tags
 
+    def test_chinese_jd_keywords_not_dropped(self):
+        """Chinese characters in JD must be preserved as keywords, not discarded.
+
+        Bug: re.split(r'[^a-z0-9]+', ...) treated CJK as separators, dropping
+        terms like 智能体/规划/决策/工具调用/向量检索/自动化 entirely.
+        Fix: Unicode-aware regex r'[^\\W_]+' keeps CJK characters.
+        """
+        from runtime.resume.selector import _extract_keywords
+
+        jd = "需要熟悉 智能体 规划 决策 工具调用 向量检索 自动化 python langchain"
+        keywords = _extract_keywords(jd)
+
+        # Chinese terms must be present
+        assert "智能体" in keywords
+        assert "规划" in keywords
+        assert "决策" in keywords
+        assert "工具调用" in keywords
+        assert "向量检索" in keywords
+        assert "自动化" in keywords
+        # English terms still work
+        assert "python" in keywords
+        assert "langchain" in keywords
+
+    def test_chinese_jd_matches_entity_with_chinese_synonyms(self):
+        """A JD with Chinese terms should match entities that carry those terms
+        in their synonyms or name fields."""
+        from runtime.resume.selector import Selector
+        selector = Selector()
+
+        entities = [
+            {
+                "id": "skill-agent",
+                "title": "AI Agent",
+                "type": "skill",
+                "tags": ["ai"],
+                "key_fields": {
+                    "name": "AI Agent",
+                    "synonyms": ["智能体", "agent"],
+                    "category": "ai",
+                },
+            },
+            {
+                "id": "skill-database",
+                "title": "PostgreSQL",
+                "type": "skill",
+                "tags": ["database"],
+                "key_fields": {
+                    "name": "PostgreSQL",
+                    "synonyms": ["postgres"],
+                    "category": "database",
+                },
+            },
+        ]
+
+        selected = selector.select(entities, jd="智能体 开发")
+        selected_ids = {e["id"] for e in selected}
+        assert "skill-agent" in selected_ids
+        assert "skill-database" not in selected_ids
+
+    def test_skill_matches_by_name_when_title_empty(self):
+        """Skill entities use `name` not `title` in their frontmatter.
+
+        Bug: KnowledgeIndex only stored title (empty for skills); Selector only
+        checked tags+title. Skills with no tag match were invisible.
+        Fix: Index now stores title=name fallback; Selector matches key_fields.name.
+        """
+        from runtime.resume.selector import Selector
+        selector = Selector()
+
+        entities = [
+            {
+                "id": "pytorch",
+                "title": "PyTorch",  # Index falls back to name
+                "type": "skill",
+                "tags": [],
+                "key_fields": {
+                    "name": "PyTorch",
+                    "synonyms": ["torch"],
+                    "category": "framework",
+                },
+            },
+        ]
+        # JD has "pytorch" — not in tags, but in name
+        selected = selector.select(entities, jd="pytorch deep learning")
+        assert len(selected) == 1
+
+    def test_stack_field_matching(self):
+        """Selector should match JD keywords against entity stack field."""
+        from runtime.resume.selector import Selector
+        selector = Selector()
+
+        entities = [
+            {
+                "id": "px4-uav",
+                "title": "PX4 UAV",
+                "type": "project",
+                "tags": ["drone"],
+                "key_fields": {
+                    "role": "Developer",
+                    "stack": ["C++", "ROS", "PX4", "STM32"],
+                    "ats_keywords": [],
+                },
+            },
+        ]
+        # "stm32" is in stack, not in tags or title
+        selected = selector.select(entities, jd="embedded stm32 firmware")
+        assert len(selected) == 1
+
+    def test_ats_keywords_matching(self):
+        """Selector should match JD keywords against entity ats_keywords field."""
+        from runtime.resume.selector import Selector
+        selector = Selector()
+
+        entities = [
+            {
+                "id": "web-app",
+                "title": "Web Application",
+                "type": "project",
+                "tags": ["web"],
+                "key_fields": {
+                    "role": "Full-stack Developer",
+                    "stack": ["React", "Node.js"],
+                    "ats_keywords": ["kubernetes", "microservices", "ci/cd"],
+                },
+            },
+        ]
+        # "microservices" is in ats_keywords, not in tags/title/stack
+        selected = selector.select(entities, jd="microservices architecture")
+        assert len(selected) == 1
+
+    def test_synonyms_matching(self):
+        """Selector should match JD keywords against entity synonyms field."""
+        from runtime.resume.selector import Selector
+        selector = Selector()
+
+        entities = [
+            {
+                "id": "k8s",
+                "title": "Kubernetes",
+                "type": "skill",
+                "tags": ["orchestration"],
+                "key_fields": {
+                    "name": "Kubernetes",
+                    "synonyms": ["k8s", "helm"],
+                    "category": "devops",
+                },
+            },
+        ]
+        # "k8s" is a synonym, not in tags/title/name
+        selected = selector.select(entities, jd="k8s deployment")
+        assert len(selected) == 1
+
 
 # ---------------------------------------------------------------------------
 # Ranker Tests
